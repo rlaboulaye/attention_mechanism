@@ -19,7 +19,7 @@ class GRUCell(nn.Module):
 
 	def initialize_parameters(self):
 		for parameter in self.parameters:
-			parameter.weight.data.normal_(0, 2. / np.sqrt(parameter.in_features + parameter.out_features))
+			parameter.weight.data.normal_(0, np.sqrt(2. / (parameter.in_features + parameter.out_features)))
 			parameter.bias.data.fill_(0.)
 
 	def forward(self, x_t, h_tm1):

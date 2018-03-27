@@ -7,6 +7,8 @@ from RNN import RNN
 
 class Decoder(nn.Module):
 
+	# TODO: add initialization for fc; cuda
+
 	def __init__(self, input_dimension=512, hidden_dimension=1024, output_dimension=5000, num_layers=1, batch_size=1):
 		super(Decoder, self).__init__()
 		self.input_dimension = input_dimension

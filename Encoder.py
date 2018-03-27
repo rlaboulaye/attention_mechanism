@@ -7,6 +7,8 @@ from RNN import RNN
 
 class Encoder(nn.Module):
 
+	# TODO: cuda
+
 	def __init__(self, input_dimension=300, hidden_dimension=512, num_layers=1, batch_size=1):
 		super(Encoder, self).__init__()
 		self.input_dimension = input_dimension

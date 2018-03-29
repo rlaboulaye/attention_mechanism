@@ -1,6 +1,6 @@
 from torch import nn
 
-from GRUCell import GRUCell
+from gru_cell import GRUCell
 
 class RNN(nn.Module):
 

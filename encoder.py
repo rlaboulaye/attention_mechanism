@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 
-from RNN import RNN
+from rnn import RNN
 
 class Encoder(nn.Module):
 

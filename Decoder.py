@@ -34,9 +34,11 @@ class Decoder(nn.Module):
 
 	def forward(self, sequence_embedding, generate=False):
 		sequence = []
-		x = self.x_0
+		# replace with embedding of eos
+		# x = self.x_0
 		h_tm1 = sequence_embedding
-		for input_embedding in input_sequence:
+		# replace with while or for
+		# for input_embedding in input_sequence:
 			h_tm1 = self.rnn(x, h_tm1)
 			x = self._get_output(h_tm1[-1], generate)
 			sequence.append(x)

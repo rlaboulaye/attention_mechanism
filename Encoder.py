@@ -1,13 +1,12 @@
 import numpy as np
 import torch
 from torch import nn
-from torch.autograd import Variable
 
+from Variable import Variable
 from RNN import RNN
 
-class Encoder(nn.Module):
 
-	# TODO: cuda
+class Encoder(nn.Module):
 
 	def __init__(self, input_dimension=300, hidden_dimension=512, num_layers=1, batch_size=1):
 		super(Encoder, self).__init__()
@@ -18,8 +17,6 @@ class Encoder(nn.Module):
 		self.forward_rnn = RNN(self.input_dimension, self.hidden_dimension, self.num_layers)
 		self.backward_rnn = RNN(self.input_dimension, self.hidden_dimension, self.num_layers)
 		self.h_0 = Variable(torch.FloatTensor(np.zeros((self.num_layers, self.batch_size, self.hidden_dimension))))
-		if torch.cuda.is_available():
-			self.h_0.cuda()
 
 	def forward(self, input_sequence, retain_sequence=False):
 		forward_h_tm1 = self.h_0

@@ -1,16 +1,23 @@
 import numpy as np
 import torch
 from torch import nn
-from torch.autograd import Variable
+
+from Variable import Variable
+from Initialization import initialize_weights
+
 
 class AttentionMechanism(nn.Module):
 
-	# TODO: add initialization for fc; cuda
+	# TODO: add another fc; cuda
 
 	def __init__(self, state_dimension, embedding_dimension):
 		super(AttentionMechanism, self).__init__()
 		self.fc = nn.Linear(state_dimension + embedding_dimension, 1)
 		self.probability = nn.Softmax()
+
+	def initialize_modules(self):
+		for module in self.modules():
+			module.apply(initialize_weights)
 
 	def forward(self, state_tm1, embeddings):
 		unnorm_alphas = []

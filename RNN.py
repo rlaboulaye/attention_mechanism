@@ -2,6 +2,7 @@ from torch import nn
 
 from GRUCell import GRUCell
 
+
 class RNN(nn.Module):
 
 	def __init__(self, input_dimension, hidden_dimension, num_layers):

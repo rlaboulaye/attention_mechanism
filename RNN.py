@@ -5,7 +5,7 @@ from GRUCell import GRUCell
 
 class RNN(nn.Module):
 
-	def __init__(self, input_dimension, hidden_dimension, num_layers):
+	def __init__(self, input_dimension, hidden_dimension, num_layers, time_cell=GRUCell):
 		super(RNN, self).__init__()
 		if num_layers < 1:
 			raise ValueError('num_layers must be 1 or greater')
@@ -17,7 +17,7 @@ class RNN(nn.Module):
 				input_dimension = self.input_dimension
 			else:
 				input_dimension = self.hidden_dimension
-			self.layers.append(GRUCell(input_dimension, self.hidden_dimension))
+			self.layers.append(time_cell(input_dimension, self.hidden_dimension))
 
 	def forward(self, x_t, h_tm1):
 		h_t = []

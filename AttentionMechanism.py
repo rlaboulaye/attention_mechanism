@@ -8,11 +8,11 @@ from Initialization import initialize_weights
 
 class AttentionMechanism(nn.Module):
 
-	# TODO: add another fc; cuda
-
 	def __init__(self, state_dimension, embedding_dimension):
 		super(AttentionMechanism, self).__init__()
-		self.fc = nn.Linear(state_dimension + embedding_dimension, 1)
+		self.hidden_fc = nn.Linear(state_dimension + embedding_dimension, state_dimension)
+		self.output_fc = nn.Linear(state_dimension, 1)
+		self.hidden_activation = nn.ReLU()
 		self.probability = nn.Softmax()
 
 	def initialize_modules(self):
@@ -23,7 +23,8 @@ class AttentionMechanism(nn.Module):
 		unnorm_alphas = []
 		for embedding in embeddings:
 			concatenated_embedding = torch.cat((state_tm1, embedding), dim=1)
-			unnorm_alphas.append(self.fc(concatenated_embedding))
+			hidden = self.hidden_activation(self.hidden_fc(concatenated_embedding))
+			unnorm_alphas.append(self.output_fc(hidden))
 		alphas = self.probability(torch.cat([torch.unsqueeze(alpha, dim=0) for alpha in unnorm_alphas], dim=0))
 		weighted_combination = None
 		for i in range(len(embeddings)):

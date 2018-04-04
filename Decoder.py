@@ -34,7 +34,7 @@ class Decoder(nn.Module):
 	def forward(self, sequence_embedding, embedding_dict, eos_index, training_sequence_length=None):
 		sequence_of_indices = []
 		sequence_of_logits = []
-		x = Variable(torch.FloatTensor(embedding_dict[eos_index]))
+		x = Variable(torch.FloatTensor(embedding_dict[eos_index] * self.batch_size))
 		h_tm1 = torch.cat([sequence_embedding.unsqueeze(0)] * self.num_layers)
 		word_indices = [-1] * self.batch_size
 		while (training_sequence_length is None and np.any(np.array(word_indices) != eos_index) and len(sequence_of_indices) < self.max_sequence_length) or (training_sequence_length is not None and len(sequence_of_indices) < training_sequence_length):

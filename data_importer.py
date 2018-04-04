@@ -2,7 +2,7 @@ import time
 import math
 import io
 import collections
-
+from itertools import izip
 import numpy as np
 
 from torch.utils.data import Dataset
@@ -10,342 +10,162 @@ from torch.utils.data import Dataset
 
 class SentenceTranslationDataset(Dataset):
 
+    UNKNOWN = "UNKNOWN"
+    EOS = "EOS"
+
     def __init__(
         self,
-        src_lang_path="./data/fr-en/europarl-v7.fr-en.en",
-        targ_lang_path="./data/fr-en/europarl-v7.fr-en.fr",
-        src_lang_embedding_path="./glove.6B/glove.6B.50d.txt",
-        max_n_sentences=1e4,
-        max_vocab_size=1e5
+        src_lang_vocab_path="./data/en-de/vocab.50K.en",
+        targ_lang_vocab_path="./data/en-de/vocab.50K.de",
+        src_lang_embedding_path="./data/fastText/wiki.en.vec",
+        targ_lang_embedding_path="./data/fastText/wiki.de.vec",
+        src_lang_path="./data/en-de/train.en",
+        targ_lang_path="./data/en-de/train.de",
+        max_n_sentences=None,
+        max_vocab_size=None,
+        prune=False
     ):
-        max_n_sentences = int(max_n_sentences)
-        max_vocab_size = int(max_vocab_size)
+        if max_n_sentences is not None:
+            max_n_sentences = int(max_n_sentences)
+        if max_vocab_size is not None:
+            max_vocab_size = int(max_vocab_size)
+        if prune != False:
+            prune = True
 
-        self._init_src_embedding(src_lang_embedding_path)
-        self._init_targ_encoding(max_vocab_size)
-        self._load_embedding_safe_data(src_lang_path, targ_lang_path, max_n_sentences)
-        self._prune_data_by_counts_and_encode(max_vocab_size)
+        self._init_vocab(src_lang_vocab_path, targ_lang_vocab_path, max_vocab_size)
+        self._init_embedding(src_lang_embedding_path, targ_lang_embedding_path)
+        self._init_text(src_lang_path, targ_lang_path, max_n_sentences, prune)
+        self._init_batching()
 
-    def _init_src_embedding(self, path):
-        self.src_word_2_embedding = {}
+    def _init_vocab(self, src_lang_vocab_path, targ_lang_vocab_path, max_vocab_size):
+        '''
+        line 0 - unknown token
+        line 2 - end of sentence token
+        '''
+        # todo consider deleting src_vocab, it is not used anywhere else
+        self.src_vocab, self.src_word_2_encoding = self._read_vocab(src_lang_vocab_path, max_vocab_size)
+        self.src_vocab_set = set(self.src_vocab)
+        self.targ_vocab, self.targ_word_2_encoding = self._read_vocab(targ_lang_vocab_path, max_vocab_size)
+        self.targ_vocab_set = set(self.targ_vocab)
+
+        self.special_tokens = {
+            self.UNKNOWN: self.src_vocab[0],
+            self.EOS: self.src_vocab[2]
+        }
+
+    def _init_targ_encoding(self):
+        self.targ_word_2_encoding = {}
+        targ_word_encoding_index = 0
+        for word in self.targ_vocab_set:
+            self.targ_word_2_encoding[word] = targ_word_encoding_index
+            targ_word_encoding_index += 1
+
+    def _read_vocab(self, path, max_vocab_size):
+        vocab = []
+        word_2_encoding = {}
+        with io.open(path, "r", encoding="utf-8") as f:
+            for i, line in enumerate(f):
+                word = line.strip()
+                vocab.append(word)
+                word_2_encoding[word] = i
+                if max_vocab_size is not None and i >= max_vocab_size:
+                    break
+        return vocab, word_2_encoding
+
+    def _init_embedding(self, src_lang_embedding_path, targ_lang_embedding_path):
+        self.src_word_2_embedding = self._read_embedding(src_lang_embedding_path)
+        self.targ_word_2_embedding = self._read_embedding(targ_lang_embedding_path)
+
+    def _read_embedding(self, path):
+        word_2_embedding = {}
         with open(path, "r") as f:
             for line in f:
                 if line != "":
                     word, str_embedding = line.strip().split(" ", 1)
-                    embedding = np.array(str_embedding.split(" "), dtype=float)
-                    self.src_word_2_embedding[word] = embedding
-        self.src_embedding_size = self.src_word_2_embedding.itervalues().next().shape[0]
+                    if word in self.src_vocab_set:
+                        word_2_embedding[word] = np.array(str_embedding.split(" "), dtype=float)
 
-    def _init_targ_encoding(self, max_vocab_size):
-        self.targ_word_2_encoding = {}
-        self.targ_word_encoding_index = 0
+        embedding_size = word_2_embedding.itervalues().next().shape[0]
+        word_2_embedding[self.special_tokens[self.UNKNOWN]] = np.zeros(embedding_size)
+        return word_2_embedding
 
-    def _load_embedding_safe_data(self, src_lang_path, targ_lang_path, max_n_sentences):
+    def _init_text(self, src_lang_path, targ_lang_path, max_n_sentences, prune):
+        self.unknown_src_word_count = 0
+        self.unknown_targ_word_count = 0
+        self.known_src_word_count = 0
+        self.known_targ_word_count = 0
+
         self.src_data = []
         self.targ_data = []
-
         with io.open(src_lang_path, "r", encoding='utf8') as f_src, io.open(targ_lang_path, "r", encoding='utf8') as f_targ:
-            for src_line, targ_line in zip(f_src, f_targ):
-                src_sentence, targ_sentence = src_line.strip().split(" "), targ_line.strip().split(" ")
-                # skip sentences which cannot be embedded
-                prune_sentence = False
-                for i, word in enumerate(src_sentence):
-                    word = word.strip()
-                    src_sentence[i] = word
-                    if word not in self.src_word_2_embedding:
-                        prune_sentence = True
-                        break
-                if prune_sentence == True:
-                    continue
+            for src_line, targ_line in izip(f_src, f_targ):
+                src_sentence = self._parse_line(src_line, "src", prune)
+                targ_sentence = self._parse_line(targ_line, "targ", prune)
 
-                targ_sentence = map(lambda x: x.strip(), targ_sentence)
-
-                self.src_data.append(src_sentence)
-                self.targ_data.append(targ_sentence)
+                if prune == False or None not in [src_sentence, targ_sentence]:
+                    self.src_data.append(src_sentence)
+                    self.targ_data.append(targ_sentence)
 
                 if max_n_sentences is not None and len(self.src_data) >= max_n_sentences:
                     break
 
-    def _prune_data_by_counts_and_encode(self, max_vocab_size):
-        self.src_vocab_counts = collections.Counter()
-        for src_sentence in self.src_data:
-            self.src_vocab_counts.update(src_sentence)
-        self.targ_vocab_counts = collections.Counter()
-        for targ_sentence in self.targ_data:
-            self.targ_vocab_counts.update(targ_sentence)
-
-        most_common_src_words = self.src_vocab_counts.most_common(max_vocab_size)
-        print type(most_common_src_words)
-        input("here")
-        most_common_targ_words = set(self.targ_vocab_counts.most_common(max_vocab_size))
-        self.targ_embedding_size = min(max_vocab_size, len(most_common_targ_words))
-
-        old_src_data = self.src_data
-        self.src_data = []
-        old_targ_data = self.targ_data
-        self.targ_data = []
-        for src_sentence, targ_sentence in zip(old_src_data, old_targ_data):
-            if set(src_sentence).issubset(most_common_src_words) and set(targ_sentence).issubset(most_common_targ_words):
-                print "here"
-                self.src_data.append(self._embed_src_sentence(src_sentence))
-                self.targ_data.append(self.embed_targ_sentence(targ_sentence, max_vocab_size))
-
-    def _embed_src_sentence(self, src_sentence):
-        result = np.empty((len(src_sentence), self.src_embedding_size))
-        for i, word in enumerate(src_sentence):
-            result[i] = self.src_word_2_embedding[word]
-        return result
-
-    def _embed_targ_sentence(self, targ_sentence):
-        result = np.zeros((len(targ_sentence), self.targ_embedding_size))
-        for i, word in enumerate(targ_sentence):
-            word_encoding = self._get_targ_word_encoding(word)
-            result[i][word_encoding] = 1
-        return result
-
-    def _get_targ_word_encoding(self, word):
-        if word not in self.targ_word_2_encoding:
-            self.targ_word_2_encoding[word] = self.targ_word_encoding_index
-            self.targ_word_encoding_index += 1
-            if self.targ_word_encoding_index > self.targ_embedding_size:
-                raise Exception("There are more target words than can be embedded.")
-        return self.targ_word_2_encoding[word]
-
-    def __len__(self):
-        return src_lang.shape[0]
-
-    def __getitem__(self, index):
-        return self.src_lang[index], self.targ_lang[index]
-
-dataset = SentenceTranslationDataset()
-print dataset.src_data[0].shape
-print dataset.targ_data[0].shape
-
-class BookSentences(Dataset):
-
-    def __init__(self, max_length = 20, min_length = 1):
-        self.max_length = max_length
-        self.min_length = min_length
-        self.data = []
-        self.token_counts = None
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return BookSentences.parse(self.data[idx])
-
-    @staticmethod
-    def parse(sentence):
-        result = []
-        for token in sentence.strip().split():
-            if not token == u'.':
-                result.append(token)
-        result.append(u'.')
-        return result
-
-    def append(self, sentence):
-        self.data.append(sentence)
-
-    # 74004229 rows, 8 GB memory, ~60s to load entire file with no embeddings
-    # 67334174 rows, 8 GB memory, ~430s to load entire file with glove embeddings
-    @staticmethod
-    def load_from_file(file_name = "books_in_sentences.txt", max_rows = 1e5, max_length = None):
-        book_sentences = BookSentences()
-        count = 0
-        with io.open(file_name, 'r', encoding = 'utf8') as data_file:
-            for sentence in data_file:
-                book_sentences.append(sentence)
-                count += 1
-                if max_rows is not None and count >= max_rows:
-                    break
-        return book_sentences
-
-    @staticmethod
-    def load_by_length(file_name = "books_in_sentences.txt", max_rows = 1e5, min_length = 1, max_length = 20):
-        start_time = time.time()
-        data = [BookSentences(max_length=x, min_length=x) for x in range(min_length, max_length + 1)]
-
-        count = 0
-        with io.open(file_name, 'r', encoding = 'utf8') as data_file:
-            for sentence in data_file:
-                parsed_sentence = BookSentences.parse(sentence)
-                length = len(parsed_sentence)
-
-                if max_length is not None and length > max_length:
-                    continue
-
-                if min_length is not None and length < min_length:
-                    continue
-
-                data[length - min_length].append(' '.join(parsed_sentence))
-                count += 1
-
-                if max_rows is not None and count >= max_rows:
-                    break
-
-        print("Loaded "+ str(len(data)) +" datasets in {0:.2f} seconds".format(time.time() - start_time))
-        return data
-
-    @staticmethod
-    def load_most_common_tokens(load_file = "books_in_sentences.txt", save_file = "most_common_tokens.txt", max_vocab_size = 1e3):
-        start_time = time.time()
-        try:
-            with io.open(save_file, 'r', encoding = 'utf8') as sf:
-                common_tokens = []
-                for line in sf:
-                    common_tokens.append(line.strip())
-                if len(common_tokens) == 0:
-                    raise ValueError("Save file doesn't exist")
-        except:
-            token_counts = {}
-            with io.open(load_file, 'r', encoding = 'utf8') as lf:
-                for sentence in lf:
-                    for token in sentence.strip().split():
-                        if token not in token_counts:
-                            token_counts[token] = 1
-                        else:
-                            token_counts[token] += 1
-            token_order = sorted([(token_counts[token], token) for token in token_counts], reverse=True)
-            common_tokens = [x[1] for x in token_order]
-
-            with io.open(save_file, 'w', encoding = 'utf8') as sf:
-                for token_count, token in common_tokens:
-                    sf.write(token + '\n')
-
-        if max_vocab_size is None:
-            print("Loaded "+ str(len(common_tokens)) +" tokens in {0:.2f} seconds".format(time.time() - start_time))
-            return common_tokens
+    def _parse_line(self, line, line_type, prune):
+        if line_type == "src":
+            vocab_set = self.src_vocab_set
+            word_2_embedding = self.src_word_2_embedding
+        elif line_type == "targ":
+            vocab_set = self.targ_vocab_set
+            word_2_embedding = self.targ_word_2_embedding
         else:
-            print("Loaded "+ str(max_vocab_size) +" tokens in {0:.2f} seconds".format(time.time() - start_time))
-            return common_tokens[:max_vocab_size]
+            raise ValueError("invalid line_type")
 
+        unknown_word_count = 0
+        sentence = []
+        for word in line.strip().split(" "):
+            if word in vocab_set and word in word_2_embedding:
+                sentence.append(word)
+            else:
+                unknown_word_count += 1
+                sentence.append(self.special_tokens[self.UNKNOWN])
+        sentence.append(self.special_tokens[self.EOS])
 
-# 2196016 rows, 6 GB memory, ~25 seconds to load entire file
-class GloveEmbeddings():
-
-    def __init__(self, file_name = "glove.txt", vocabulary = None):
-        start_time = time.time()
-        self.file_name = file_name
-        self.data = {}
-        self.index_to_token_map = {}
-        self.count = 0
-        self.vocabulary = vocabulary
-        if self.vocabulary is not None:
-            self.vocabulary = set(self.vocabulary)
-            self.vocabulary.add(".") # use period for end of sentence
-            self.vocabulary.add("0") # use zero for numbers
-            self.vocabulary.add("unknown") # use unknown for oov words
-
-        with io.open(file_name, 'r', encoding = 'utf8') as data_file:
-            for line in data_file:
-                line = line.split(" ", 1)
-                self.add(line[0], line[1])
-        print("Loaded "+ str(len(self.data)) +" embeddings in {0:.2f} seconds".format(time.time() - start_time))
-
-
-    def add(self, word, embedding):
-        if self.vocabulary is not None:
-            if word not in self.vocabulary:
-                return False
-        self.data[word] = (embedding, self.count)
-        self.index_to_token_map[self.count] = word
-        self.count += 1
-        return True
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, key):
-        return [float(x) for x in self.data[key][0].split(" ")]
-
-    def get_word(self, index):
-        return self.index_to_token_map[index]
-
-    def get_index(self, token):
-        if token.isnumeric():
-            return self.data["0"][1]
-        elif token not in self.data:
-            return self.data["unknown"][1]
+        if line_type == "src":
+            self.unknown_src_word_count += unknown_word_count
+            self.known_src_word_count += len(sentence) - unknown_word_count
+        elif line_type == "targ":
+            self.unknown_targ_word_count += unknown_word_count
+            self.known_targ_word_count += len(sentence) - unknown_word_count
         else:
-            return self.data[token][1]
+            raise ValueError("invalid line_type")
 
-    def get_indexes(self, tokens):
-        indexed_tokens = []
-        for token in tokens:
-            indexed_tokens.append(self.get_index(token))
-        return indexed_tokens
+        if prune and unknown_word_count > 0:
+            return None
+        else:
+            return sentence
 
-    def __contains__(self, key):
-        return key in self.data
+    def _init_batching(self):
+        pass
 
-    def embed(self, batch):
-        embedded_batch = []
-        for sentence in batch:
-            embedded_sentence = []
-            for token in sentence:
-                if token.isnumeric():
-                    embedded_sentence.append(self["0"])
-                elif token not in self.data:
-                    embedded_sentence.append(self["unknown"])
-                else:
-                    embedded_sentence.append(self[token])
-            embedded_batch.append(embedded_sentence)
-        return embedded_batch
+    def batch(self, sequence_length, batch_size):
+        pass
 
-    def save(self, save_file = None):
-        if save_file is None:
-            save_file = "glove_" + str(len(self.data)) + ".txt"
-        with io.open(save_file, 'w', encoding = 'utf8') as sf:
-            for token in self.data:
-                sf.write(token + " " + self.data[token][0])
+    # def embed_src_sentence(sentence):
+    #     result = []
+    #     for word in sentence:
+    #         if word == self.special_tokens[self.UNKNOWN] or word not in src_word_2_str_embedding:
+    #             embedding = self.special_token_str_embedding[self.UNKNOWN]
+    #         elif word == self.special_tokens[self.EOS]:
+    #             embedding = self.special_token_str_embedding[self.EOS]
+    #         else:
+    #             embedding = src_word_2_str_embedding[word] + " 0"
+    #         embedding = np.array(embedding.split(" "), dtype=float)
+    #         result.append(embedding)
+    #     return result
+
+    # self.src_data = map(embed_src_sentence, self.src_data)
 
 
 
-class GloveDataset(Dataset):
-    def __init__(self, file_name = "glove.txt", max_rows = 1e5):
-        self.max_rows = max_rows
-        self.file_name = file_name
-        self.data = []
-
-        with io.open(file_name, 'r', encoding = 'utf8') as data_file:
-            for line in data_file:
-                self.data.append(line)
-                if self.max_rows is not None and len(self.data) >= self.max_rows:
-                    break
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        line = self.data[idx].split(" ")
-        line = [line[0]] + [float(x) for x in line[1:]]
-        return line
-
-class CharacterEmbeddings():
-
-    def __init__(self, file_name = "character_embedding_weights.txt"):
-        with io.open(file_name, 'r') as f:
-            character_to_index = {}
-            index_to_character = {}
-            entries = f.read().split()
-            embedding_size  =300
-            row_size = embedding_size + 1
-            embedding = None
-            for i in range(math.ceil(len(entries) / float(row_size))):
-                character = entries[i * row_size]
-                row = np.array(entries[i * row_size + 1 : i * row_size + row_size], dtype=float).reshape(1,-1)
-                character_to_index[character] = i
-                index_to_character[i] = character
-                if embedding is None:
-                    embedding = row
-                else:
-                    embedding = np.append(embedding, row, axis=0)
-            self.embedding = embedding
-            self.character_to_index = character_to_index
-            self.index_to_character = index_to_character
-
-    def to_indices(self, string):
-        if len(string) > 20:
-            return []
-        return [self.character_to_index[x] for x in string if x in self.character_to_index]
+dataset = SentenceTranslationDataset(max_n_sentences=1e3, max_vocab_size=1e3)
+print dataset.known_src_word_count, dataset.unknown_src_word_count
+print dataset.known_targ_word_count, dataset.unknown_targ_word_count

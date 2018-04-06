@@ -3,23 +3,25 @@ import torch
 from torch import nn
 
 from Variable import Variable
+from GRUCell import GRUCell
 from RNN import RNN
 from Initialization import initialize_weights
 
 
 class Decoder(nn.Module):
 
-	def __init__(self, input_dimension=512, hidden_dimension=1024, output_dimension=5000, num_layers=1, batch_size=1, max_sequence_length=50):
+	def __init__(self, input_dimension=512, hidden_dimension=1024, output_dimension=5000, num_layers=1, batch_size=1, max_sequence_length=50, time_cell=GRUCell):
 		super(Decoder, self).__init__()
 		self.input_dimension = input_dimension
 		self.hidden_dimension = hidden_dimension
 		self.output_dimension = output_dimension
 		self.num_layers = num_layers
 		self.batch_size = batch_size
-		self.rnn = RNN(self.input_dimension, self.hidden_dimension, self.num_layers)
+		self.rnn = RNN(self.input_dimension, self.hidden_dimension, self.num_layers, time_cell)
 		self.fc = nn.Linear(self.hidden_dimension, self.output_dimension)
 		self.output_activation = nn.Softmax()
 		self.max_sequence_length = max_sequence_length
+		self.initialize_modules()
 
 	def initialize_modules(self):
 		for module in self.modules():

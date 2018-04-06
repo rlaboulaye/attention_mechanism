@@ -14,6 +14,7 @@ class AttentionMechanism(nn.Module):
 		self.output_fc = nn.Linear(state_dimension, 1)
 		self.hidden_activation = nn.ReLU()
 		self.probability = nn.Softmax()
+		self.initialize_modules()
 
 	def initialize_modules(self):
 		for module in self.modules():

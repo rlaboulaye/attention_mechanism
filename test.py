@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from Variable import Variable
+from Variable import get_variable
 
 from Encoder import Encoder
 from Decoder import Decoder
@@ -22,14 +22,14 @@ input_embeddings = []
 for i in range(sequence_length):
 	batch_words = np.random.choice(range(len(vocabulary)), batch_size)
 	batch_embeddings = np.concatenate([embedding_dict[word].reshape(1,-1) for word in batch_words])
-	x = Variable(torch.FloatTensor(batch_embeddings))
+	x = get_variable(torch.FloatTensor(batch_embeddings))
 	input_embeddings.append(x)
-input_embeddings.append(Variable(torch.FloatTensor(np.concatenate([embedding_dict[eos_index].reshape(1, -1) for i in range(batch_size)]))))
+input_embeddings.append(get_variable(torch.FloatTensor(np.concatenate([embedding_dict[eos_index].reshape(1, -1) for i in range(batch_size)]))))
 
 encoder = Encoder(input_dimension, hidden_dimension, num_layers, batch_size)
 sequence_embeddings = encoder(input_embeddings, True)
 
-state = Variable(torch.FloatTensor(np.random.rand(batch_size, hidden_dimension)))
+state = get_variable(torch.FloatTensor(np.random.rand(batch_size, hidden_dimension)))
 attention = AttentionMechanism(hidden_dimension, hidden_dimension * 2)
 print(attention(state, sequence_embeddings))
 

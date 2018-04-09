@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from Variable import Variable
+from Variable import get_variable
 from GRUCell import GRUCell
 from RNN import RNN
 from Initialization import initialize_weights
@@ -27,6 +27,12 @@ class Decoder(nn.Module):
 		for module in self.modules():
 			module.apply(initialize_weights)
 
+	def _get_initial_hidden_state(self, sequence_embedding):
+		return torch.cat([sequence_embedding.unsqueeze(0)] * self.num_layers)
+
+	def _get_hidden_state(self, x, h_tm1, sequence_embedding):
+		return self.rnn(x, h_tm1)
+
 	def _get_output(self, hidden_state):
 		logits = self.fc(hidden_state)
 		probabilities = self.output_activation(logits)
@@ -36,13 +42,13 @@ class Decoder(nn.Module):
 	def forward(self, sequence_embedding, embedding_dict, eos_index, training_sequence_length=None):
 		sequence_of_indices = []
 		sequence_of_logits = []
-		x = Variable(torch.FloatTensor(embedding_dict[eos_index] * self.batch_size))
-		h_tm1 = torch.cat([sequence_embedding.unsqueeze(0)] * self.num_layers)
+		x = get_variable(torch.FloatTensor(embedding_dict[eos_index] * self.batch_size))
+		h_tm1 = self._get_initial_hidden_state(sequence_embedding)
 		word_indices = [-1] * self.batch_size
 		while (training_sequence_length is None and np.any(np.array(word_indices) != eos_index) and len(sequence_of_indices) < self.max_sequence_length) or (training_sequence_length is not None and len(sequence_of_indices) < training_sequence_length):
-			h_tm1 = self.rnn(x, h_tm1)
+			h_tm1 = self._get_hidden_state(x, h_tm1, sequence_embedding)
 			word_indices, logits = self._get_output(h_tm1[-1])
 			sequence_of_indices.append(word_indices)
 			sequence_of_logits.append(logits)
-			x = Variable(torch.FloatTensor([embedding_dict[word_index] for word_index in word_indices]))
+			x = get_variable(torch.FloatTensor([embedding_dict[word_index] for word_index in word_indices]))
 		return sequence_of_indices, sequence_of_logits

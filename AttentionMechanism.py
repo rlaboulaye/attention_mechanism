@@ -2,7 +2,6 @@ import numpy as np
 import torch
 from torch import nn
 
-from Variable import Variable
 from Initialization import initialize_weights
 
 

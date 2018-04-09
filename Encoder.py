@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from Variable import Variable
+from Variable import get_variable
 from RNN import RNN
 
 
@@ -16,7 +16,7 @@ class Encoder(nn.Module):
 		self.batch_size = batch_size
 		self.forward_rnn = RNN(self.input_dimension, self.hidden_dimension, self.num_layers)
 		self.backward_rnn = RNN(self.input_dimension, self.hidden_dimension, self.num_layers)
-		self.h_0 = Variable(torch.FloatTensor(np.zeros((self.num_layers, self.batch_size, self.hidden_dimension))))
+		self.h_0 = get_variable(torch.FloatTensor(np.zeros((self.num_layers, self.batch_size, self.hidden_dimension))))
 
 	def forward(self, input_sequence, retain_sequence=False):
 		forward_h_tm1 = self.h_0

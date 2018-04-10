@@ -1,25 +1,137 @@
 import torch
 from torch import nn
+import numpy as np
 
 from data_importer import SentenceTranslationDataset
 from encoder import Encoder
 from decoder import Decoder
 from attention_based_decoder import AttentionBasedDecoder
+from loss import SequenceLoss
+from gru_cell import GRUCell
+from context_enhanced_gru_cell_a import ContextEnhancedGRUCellA
+from context_enhanced_gru_cell_b import ContextEnhancedGRUCellB
+from variable import get_variable
 
 class NeuralMachineTranslation(nn.Module):
 
-	def __init__(self, vocab_size=, encoder_weights=None, decoder_weights=None):
-		self.vocab_size = vocab_size
-		if encoder_weights is None:
-		else:
-		if decoder_weights is None:
-		else:
+    def __init__(
+        self,
+        data_loader,
+        vocab_size,
 
-	def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5):
+        batch_size=16,
 
+        n_encoder_layers=2,
+        enc_input_dimension_size=300,
+        enc_hidden_dimension_size=256,
 
-	def epoch(self, epoch_size, data_loader):
-		self.encoder
-		self.decoder
+        n_decoder_layers=2,
+        dec_input_dimension_size=300,
+        dec_hidden_dimension_size=512,
 
-	def translate(self):
+        encoder_weights=None,
+        decoder_weights=None,
+
+        use_attention_mechanism=False,
+
+        bottom_time_cell=ContextEnhancedGRUCellA,
+        stacked_time_cell=GRUCell
+    ):
+        if encoder_weights is None:
+            self.encoder = Encoder(enc_input_dimension_size, enc_hidden_dimension_size, n_encoder_layers, batch_size)
+
+        else:
+            if torch.cuda.is_available():
+                self.encoder = torch.load(encoder_weights)
+            else:
+                self.encoder = torch.load(encoder_weights, map_location=lambda storage, loc: storage)
+
+        if decoder_weights is None:
+            if use_attention_mechanism == True:
+                self.decoder = AttentionBasedDecoder(
+                    dec_input_dimension_size,
+                    dec_hidden_dimension_size,
+                    enc_hidden_dimension_size*2,
+                    vocab_size,
+                    n_decoder_layers,
+                    batch_size,
+                    bottom_time_cell=bottom_time_cell,
+                    stacked_time_cell=stacked_time_cell
+                )
+            else:
+                self.decoder = Decoder(
+                    dec_input_dimension_size,
+                    dec_hidden_dimension_size,
+                    vocab_size,
+                    n_decoder_layers,
+                    batch_size,
+                    bottom_time_cell=bottom_time_cell,
+                    stacked_time_cell=stacked_time_cell
+                )
+        else:
+            if torch.cuda.is_available():
+                self.decoder = torch.load(decoder_weights)
+            else:
+                self.decoder = torch.load(decoder_weights, map_location=lambda storage, loc: storage)
+
+        self.loss = SequenceLoss()
+
+        if torch.cuda.is_available():
+            self.encoder = self.encoder.cuda()
+            self.decoder = self.decoder.cuda()
+            self.loss = self.loss.cuda()
+
+        self.batch_size = batch_size
+        self.use_attention_mechanism = use_attention_mechanism
+
+    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5):
+        optimizer = torch.optim.Adam(self.encoder.parameters() + self.decoder.parameters(), lr=learning_rate)
+        train_losses = []
+        for e in xrange(num_epochs):
+            train_losses += self._epoch(epoch_size, optimizer)
+            # test_losses += self._epoch(epoch_size) # todo
+
+    def _epoch(self, epoch_size, optimizer=None):
+        seq_lens = data_loader.get_valid_seq_lens()
+        seq_len_probs = seq_lens[:,1] / np.sum(seq_lens[:,1])
+
+        losses = []
+        for i in xrange(epoch_size):
+            src_seq_len_index = np.random.multinomial(1, seq_len_probs)
+            src_seq_len = src_seq_lens[src_seq_len_index, 0]
+            batch_x_values, batch_y_values = data_loader.batch(seq_len, self.batch_size)
+            targ_seq_len = batch_y_values.shape[0]
+            batch_x_variables = [get_variable(torch.FloatTensor(x)) for x in batch_x_values]
+            batch_y_variables = [get_variable(torch.FloatTensor(y)) for y in batch_y_values]
+            encoding = self.encoder(batch_x_values, self.use_attention_mechanism)
+            predctions, logits = self.decoder(
+                encoding,
+                self.data_loader.targ_encoding_2_embedding,
+                self.data_loader.targ_word_2_encoding[self.data_loader.EOS_TOKEN],
+                targ_seq_len
+            )
+            loss = self.loss(logits, batch_y_variables)
+            losses.append(loss)
+
+            if optimizer is not None:
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+        print np.mean(losses)
+        return losses
+
+    def translate(self):
+        # todo
+        pass
+
+if __name__ == '__main__':
+    vocab_size = 1e4
+    data_loader = SentenceTranslationDataset(
+        max_n_sentences=1e4,
+        max_vocab_size=vocab_size,
+        max_src_sentence_len=30,
+        prune_by_vocab=True,
+        prune_by_embedding=True
+    )
+    nmt = NeuralMachineTranslation(data_loader, vocab_size)

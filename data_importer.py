@@ -9,6 +9,7 @@ from itertools import izip
 import numpy as np
 import pickle
 from HTMLParser import HTMLParser
+import traceback
 
 from torch.utils.data import Dataset
 
@@ -19,20 +20,20 @@ class SentenceTranslationDataset(Dataset):
     EOS_TOKEN = "</s>"
 
     # # default
-    # def __init__(
-    #     self,
-    #     src_lang_vocab_path="./data/en-de/vocab.50K.en",
-    #     targ_lang_vocab_path="./data/en-de/vocab.50K.de",
-    #     src_lang_embedding_path="./data/fastText/wiki.en.vec",
-    #     targ_lang_embedding_path="./data/fastText/wiki.de.vec",
-    #     src_lang_path="./data/en-de/train.en",
-    #     targ_lang_path="./data/en-de/train.de",
-    #     max_vocab_size=None,
-    #     max_n_sentences=None,
-    #     max_src_sentence_len=None,
-    #     prune_by_vocab=False,
-    #     prune_by_embedding=False
-    # ):
+    def __init__(
+        self,
+        src_lang_vocab_path="./data/en-de/vocab.50K.en",
+        targ_lang_vocab_path="./data/en-de/vocab.50K.de",
+        src_lang_embedding_path="./data/fastText/wiki.en.vec",
+        targ_lang_embedding_path="./data/fastText/wiki.de.vec",
+        src_lang_path="./data/en-de/train.en",
+        targ_lang_path="./data/en-de/train.de",
+        max_vocab_size=None,
+        max_n_sentences=None,
+        max_src_sentence_len=None,
+        prune_by_vocab=False,
+        prune_by_embedding=False
+    ):
 
     # # embedding as vocab
     # def __init__(
@@ -51,20 +52,20 @@ class SentenceTranslationDataset(Dataset):
     # ):
 
     # english to english
-    def __init__(
-        self,
-        src_lang_vocab_path="./data/fastText/wiki.en.vec.vocab",
-        targ_lang_vocab_path="./data/fastText/wiki.en.vec.vocab",
-        src_lang_embedding_path="./data/fastText/wiki.en.vec",
-        targ_lang_embedding_path="./data/fastText/wiki.en.vec",
-        src_lang_path="./data/en-de/train.en",
-        targ_lang_path="./data/en-de/train.en",
-        max_vocab_size=None,
-        max_n_sentences=None,
-        max_src_sentence_len=None,
-        prune_by_vocab=False,
-        prune_by_embedding=False
-    ):
+    #def __init__(
+    #    self,
+    #    src_lang_vocab_path="./data/fastText/wiki.en.vec.vocab",
+    #    targ_lang_vocab_path="./data/fastText/wiki.en.vec.vocab",
+    #    src_lang_embedding_path="./data/fastText/wiki.en.vec",
+    #    targ_lang_embedding_path="./data/fastText/wiki.en.vec",
+    #    src_lang_path="./data/en-de/train.en",
+    #    targ_lang_path="./data/en-de/train.en",
+    #    max_vocab_size=None,
+    #    max_n_sentences=None,
+    #    max_src_sentence_len=None,
+    #    prune_by_vocab=False,
+    #     prune_by_embedding=False
+    # )
         if max_vocab_size is not None:
             max_vocab_size = int(max_vocab_size)
         if max_n_sentences is not None:
@@ -196,7 +197,9 @@ class SentenceTranslationDataset(Dataset):
                 src_sentence = self._parse_text_line(src_line, "src")
                 targ_sentence = self._parse_text_line(targ_line, "targ")
 
-                if None in [src_sentence, targ_sentence]: # it was pruned
+                if None in [src_sentence, targ_sentence]: # it was pruned for containing an unknown word
+                    self.pruned_sentence_count += 1
+                elif self.max_src_sentence_len is not None and len(src_sentence) > self.max_src_sentence_len:
                     self.pruned_sentence_count += 1
                 else:
                     self.src_data.append(src_sentence)
@@ -251,33 +254,60 @@ class SentenceTranslationDataset(Dataset):
             return sentence
 
     def _init_batching(self):
-        self.batch_start_indices = [0] * len(self.src_data_by_seq_len_indices)
+        self.batch_indices_start_indices = [0] * len(self.src_data_by_seq_len_indices)
 
-    def batch(self, src_seq_len, batch_size, shuffle=True):
-        if src_seq_len >= len(self.batch_start_indices):
+    def batch(self, src_seq_len, batch_size, drop_last=False, shuffle=True):
+        batch_indices = self._get_batch_indices(src_seq_len, batch_size, drop_last, shuffle)
+        return batch_indices
+        batch_src_data = self._src_batch(batch_indices)
+        batch_targ_data = self._targ_batch(batch_indices)
+        return batch_src_data, batch_targ_data
+
+    def _get_batch_indices(self, src_seq_len, batch_size, drop_last, shuffle):
+        if src_seq_len >= len(self.batch_indices_start_indices):
             raise ValueError("src_seq_len is too long")
+        if drop_last == True and batch_size > len(self.src_data_by_seq_len_indices[src_seq_len]):
+            raise ValueError("not enough data of sequence length {} for a batch of size {}".format(src_seq_len, batch_size))
 
-        batch_start_index = self.batch_start_indices[src_seq_len]
-        batch_end_index = min(batch_start_index + batch_size, len(self.src_data_by_seq_len_indices))
-        if batch_end_index == len(self.src_data_by_seq_len_indices):
-            self.batch_start_indices[src_seq_len] = 0
+        # get index indices - yes double indexing
+        batch_indices_start_index = self.batch_indices_start_indices[src_seq_len]
+        batch_indices_end_index = batch_indices_start_index + batch_size
+        if drop_last == True and batch_indices_end_index > len(self.src_data_by_seq_len_indices[src_seq_len]):
+            batch_indices_start_index = 0
+            batch_indices_end_index = batch_size
         else:
-            self.batch_start_indices[src_seq_len] = batch_end_index
+            batch_indices_end_index = min(batch_indices_end_index, len(self.src_data_by_seq_len_indices[src_seq_len]))
 
-        data_indices = self.src_data_by_seq_len_indices[src_seq_len][batch_start_index:batch_end_index]
-        print self.src_data[data_indices[0]]
-        print self.targ_data[data_indices[0]]
-        batch_src_data = np.array([self._embed_src_sentence(self.src_data[i]) for i in data_indices])
+        # shuffle if needed
+        if batch_indices_start_index == 0 and shuffle == True:
+            self._shuffle_src_data_indices(src_seq_len)
+
+        self.batch_indices_start_indices[src_seq_len] += batch_size
+        # update index indices
+        if batch_indices_start_index == 0:
+            self.batch_indices_start_indices[src_seq_len] = batch_size
+        if batch_indices_end_index == len(self.src_data_by_seq_len_indices[src_seq_len]):
+            self.batch_indices_start_indices[src_seq_len] = 0
+
+        return self.src_data_by_seq_len_indices[src_seq_len][batch_indices_start_index:batch_indices_end_index]
+
+    def _shuffle_src_data_indices(self, src_seq_len):
+        np.random.shuffle(self.src_data_by_seq_len_indices[src_seq_len])
+
+    def _src_batch(self, batch_indices):
+        batch_src_data = np.array([self._embed_src_sentence(self.src_data[i]) for i in batch_indices])
         batch_src_data = np.swapaxes(batch_src_data, 0, 1)
+        return batch_src_data
 
+    def _targ_batch(self, batch_indices):
         # get max targ seq len
         max_targ_seq_len = 0
         jagged_batch_targ_data = []
-        for i in data_indices:
+        for i in batch_indices:
             jagged_batch_targ_data.append(self._encode_targ_sentence(self.targ_data[i]))
             max_targ_seq_len = max(max_targ_seq_len, len(jagged_batch_targ_data[-1]))
 
-        # pad targ batch to max seq len and embed
+        # pad targ batch to max seq len and encode
         batch_targ_data = []
         for targ_data in jagged_batch_targ_data:
             pad_width = (0, max_targ_seq_len - len(targ_data))
@@ -288,7 +318,7 @@ class SentenceTranslationDataset(Dataset):
         batch_targ_data = np.array(batch_targ_data)
         batch_targ_data = np.swapaxes(batch_targ_data, 0, 1)
 
-        return batch_src_data, batch_targ_data
+        return batch_targ_data
 
     def _embed_src_sentence(self, sentence):
         return np.array([self.src_word_2_embedding[word] for word in sentence])
@@ -296,7 +326,7 @@ class SentenceTranslationDataset(Dataset):
     def _encode_targ_sentence(self, sentence):
         return np.array([self.targ_vocab_2_encoding[word] for word in sentence])
 
-dataset = SentenceTranslationDataset(max_n_sentences=1e6, max_vocab_size=1e4, max_src_sentence_len=40, prune_by_vocab=True, prune_by_embedding=True)#, prune_by_embedding=True)
+dataset = SentenceTranslationDataset(max_n_sentences=1e4, max_vocab_size=1e4, max_src_sentence_len=40, prune_by_vocab=True, prune_by_embedding=True)#, prune_by_embedding=True)
 print dataset.unknown_src_vocab_count / dataset.known_src_word_count, dataset.unknown_src_embedding_count / dataset.known_src_word_count
 print dataset.unknown_targ_vocab_count / dataset.known_targ_word_count, dataset.unknown_targ_embedding_count / dataset.known_targ_word_count
 print dataset.pruned_sentence_count
@@ -305,8 +335,13 @@ print len(dataset.src_data), len(dataset.targ_data)
 # for i, item in enumerate(dataset.src_data_by_seq_len_indices):
 #     print i, len(item)
 
-for i in xrange(7):
-    dataset.batch(13, 17)
+for s in xrange(7, 42):
+    for i in xrange(13):
+        try:
+            print s, dataset.batch(s, 5, True, True)
+        except Exception as e:
+            traceback.print_exc()
+        raw_input()
 
 
 # emb_path = "./data/fastText/wiki.de.vec"
@@ -327,3 +362,4 @@ for i in xrange(7):
 #         print line
 #         if i == 10:
 #             break
+

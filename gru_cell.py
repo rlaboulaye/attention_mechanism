@@ -2,6 +2,9 @@ import numpy as np
 import torch
 from torch import nn
 
+from Initialization import initialize_weights
+
+
 class GRUCell(nn.Module):
 
 	def __init__(self, input_dimension, hidden_dimension, output_activation=nn.Tanh(), gating_activation=nn.Sigmoid()):
@@ -16,11 +19,11 @@ class GRUCell(nn.Module):
 		self.U_r = nn.Linear(hidden_dimension, hidden_dimension, bias=True)
 		self.W_h = nn.Linear(input_dimension, hidden_dimension, bias=True)
 		self.U_h = nn.Linear(hidden_dimension, hidden_dimension, bias=True)
+		self.initialize_modules()
 
-	def initialize_parameters(self):
-		for parameter in self.parameters:
-			parameter.weight.data.normal_(0, np.sqrt(2. / (parameter.in_features + parameter.out_features)))
-			parameter.bias.data.fill_(0.)
+	def initialize_modules(self):
+		for module in self.modules():
+			module.apply(initialize_weights)
 
 	def forward(self, x_t, h_tm1):
 		z_t = self.gating_activation(self.W_z(x_t) + self.U_z(h_tm1))

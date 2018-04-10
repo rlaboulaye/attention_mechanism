@@ -19,15 +19,15 @@ class SentenceTranslationDataset(Dataset):
     UNKNOWN_TOKEN = "<unk>"
     EOS_TOKEN = "</s>"
 
-    # default, english to german
+    # default, english to spanish
     def __init__(
         self,
-        src_lang_vocab_path="./data/en-de/vocab.50K.en",
-        targ_lang_vocab_path="./data/en-de/vocab.50K.de",
+        src_lang_vocab_path="./data/en-es/vocab.50K.en",
+        targ_lang_vocab_path="./data/en-es/vocab.50K.es",
         src_lang_embedding_path="./data/fastText/wiki.en.vec",
-        targ_lang_embedding_path="./data/fastText/wiki.de.vec",
-        src_lang_path="./data/en-de/train.en",
-        targ_lang_path="./data/en-de/train.de",
+        targ_lang_embedding_path="./data/fastText/wiki.es.vec",
+        src_lang_path="./data/en-es/train.en",
+        targ_lang_path="./data/en-es/train.es",
         max_vocab_size=None,
         max_n_sentences=None,
         max_src_sentence_len=None,
@@ -35,15 +35,15 @@ class SentenceTranslationDataset(Dataset):
         prune_by_embedding=False
     ):
 
-    # # embedding as vocab
+    # english to english
     # def __init__(
     #     self,
-    #     src_lang_vocab_path="./data/fastText/wiki.en.vec.vocab",
-    #     targ_lang_vocab_path="./data/fastText/wiki.de.vec.vocab",
+    #     src_lang_vocab_path="./data/en-es/vocab.50K.en",
+    #     targ_lang_vocab_path="./data/en-es/vocab.50K.en",
     #     src_lang_embedding_path="./data/fastText/wiki.en.vec",
-    #     targ_lang_embedding_path="./data/fastText/wiki.de.vec",
-    #     src_lang_path="./data/en-de/train.en",
-    #     targ_lang_path="./data/en-de/train.de",
+    #     targ_lang_embedding_path="./data/fastText/wiki.en.vec",
+    #     src_lang_path="./data/en-es/train.en",
+    #     targ_lang_path="./data/en-es/train.en",
     #     max_vocab_size=None,
     #     max_n_sentences=None,
     #     max_src_sentence_len=None,
@@ -51,21 +51,6 @@ class SentenceTranslationDataset(Dataset):
     #     prune_by_embedding=False
     # ):
 
-    # english to english
-    #def __init__(
-    #    self,
-    #    src_lang_vocab_path="./data/fastText/wiki.en.vec.vocab",
-    #    targ_lang_vocab_path="./data/fastText/wiki.en.vec.vocab",
-    #    src_lang_embedding_path="./data/fastText/wiki.en.vec",
-    #    targ_lang_embedding_path="./data/fastText/wiki.en.vec",
-    #    src_lang_path="./data/en-de/train.en",
-    #    targ_lang_path="./data/en-de/train.en",
-    #    max_vocab_size=None,
-    #    max_n_sentences=None,
-    #    max_src_sentence_len=None,
-    #    prune_by_vocab=False,
-    #     prune_by_embedding=False
-    # )
         if max_vocab_size is not None:
             max_vocab_size = int(max_vocab_size)
         if max_n_sentences is not None:
@@ -114,7 +99,7 @@ class SentenceTranslationDataset(Dataset):
 
     def _read_vocab(self, path):
         vocab = []
-        word_2_encoding = {}
+        vocab_2_encoding = {}
         with self._open_file(path, "r") as f:
             for i, line in enumerate(f):
                 line = line.strip()
@@ -122,19 +107,20 @@ class SentenceTranslationDataset(Dataset):
                         break
                 word = self._parse_word(line) # one word per line
                 vocab.append(word)
-                word_2_encoding[word] = i
+                vocab_2_encoding[word] = i
 
-        if self.UNKNOWN_TOKEN not in word_2_encoding:
+        if self.UNKNOWN_TOKEN not in vocab_2_encoding:
             vocab.append(self.UNKNOWN_TOKEN)
-            word_2_encoding[self.UNKNOWN_TOKEN] = i
+            vocab_2_encoding[self.UNKNOWN_TOKEN] = i
             i += 1
 
-        if self.EOS_TOKEN not in word_2_encoding:
+
+        if self.EOS_TOKEN not in vocab_2_encoding:
             vocab.append(self.EOS_TOKEN)
-            word_2_encoding[self.EOS_TOKEN] = i
+            vocab_2_encoding[self.EOS_TOKEN] = i
             i += 1
 
-        return vocab, word_2_encoding
+        return vocab, vocab_2_encoding
 
     def _init_embedding(self):
         cache_src_emb_path = self._get_cache_src_emb_path()

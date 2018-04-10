@@ -1,11 +1,11 @@
 import numpy as np
 import torch
-from Variable import get_variable
 
-from Encoder import Encoder
-from Decoder import Decoder
-from AttentionMechanism import AttentionMechanism
-from AttentionBasedDecoder import AttentionBasedDecoder
+from variable import get_variable
+from encoder import Encoder
+from decoder import Decoder
+from attention_mechanism import AttentionMechanism
+from attention_based_decoder import AttentionBasedDecoder
 
 input_dimension = 8
 hidden_dimension = 5

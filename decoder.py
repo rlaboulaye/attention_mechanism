@@ -3,9 +3,9 @@ import torch
 from torch import nn
 
 from rnn import RNN
-from Variable import get_variable
+from variable import get_variable
 from gru_cell import GRUCell
-from Initialization import initialize_weights
+from initialization import initialize_weights
 
 
 class Decoder(nn.Module):

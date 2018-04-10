@@ -2,12 +2,12 @@ import numpy as np
 import torch
 from torch import nn
 
-from Decoder import Decoder
-from AttentionMechanism import AttentionMechanism
-from GRUCell import GRUCell
-from ContextEnhancedGRUCellA import ContextEnhancedGRUCellA
-from ContextEnhancedGRUCellB import ContextEnhancedGRUCellB
-from Variable import get_variable
+from decoder import Decoder
+from attention_mechanism import AttentionMechanism
+from gru_cell import GRUCell
+from context_enhanced_gru_cell_a import ContextEnhancedGRUCellA
+from context_enhanced_gru_cell_b import ContextEnhancedGRUCellB
+from variable import get_variable
 
 
 class AttentionBasedDecoder(Decoder):

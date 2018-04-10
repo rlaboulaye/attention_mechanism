@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import numpy as np
+import itertools
 
 from data_importer import SentenceTranslationDataset
 from encoder import Encoder
@@ -34,9 +35,11 @@ class NeuralMachineTranslation(nn.Module):
 
         use_attention_mechanism=False,
 
-        bottom_time_cell=ContextEnhancedGRUCellA,
+        bottom_time_cell=GRUCell,
         stacked_time_cell=GRUCell
     ):
+        super(NeuralMachineTranslation, self).__init__()
+        self.data_loader = data_loader
         if encoder_weights is None:
             self.encoder = Encoder(enc_input_dimension_size, enc_hidden_dimension_size, n_encoder_layers, batch_size)
 
@@ -85,29 +88,30 @@ class NeuralMachineTranslation(nn.Module):
         self.use_attention_mechanism = use_attention_mechanism
 
     def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5):
-        optimizer = torch.optim.Adam(self.encoder.parameters() + self.decoder.parameters(), lr=learning_rate)
+        optimizer = torch.optim.Adam(itertools.chain(self.encoder.parameters(), self.decoder.parameters()), lr=learning_rate)
         train_losses = []
         for e in xrange(num_epochs):
             train_losses += self._epoch(epoch_size, optimizer)
             # test_losses += self._epoch(epoch_size) # todo
+        # todo save wieghts
 
     def _epoch(self, epoch_size, optimizer=None):
-        seq_lens = data_loader.get_valid_seq_lens()
-        seq_len_probs = seq_lens[:,1] / np.sum(seq_lens[:,1])
+        src_seq_lens = self.data_loader.get_valid_seq_lens()
+        src_seq_len_probs = src_seq_lens[:,1] / np.sum(src_seq_lens[:,1])
 
         losses = []
         for i in xrange(epoch_size):
-            src_seq_len_index = np.random.multinomial(1, seq_len_probs)
+            src_seq_len_index = np.argmax(np.random.multinomial(1, src_seq_len_probs))
             src_seq_len = src_seq_lens[src_seq_len_index, 0]
-            batch_x_values, batch_y_values = data_loader.batch(seq_len, self.batch_size)
+            batch_x_values, batch_y_values = data_loader.batch(src_seq_len, self.batch_size)
             targ_seq_len = batch_y_values.shape[0]
             batch_x_variables = [get_variable(torch.FloatTensor(x)) for x in batch_x_values]
             batch_y_variables = [get_variable(torch.FloatTensor(y)) for y in batch_y_values]
-            encoding = self.encoder(batch_x_values, self.use_attention_mechanism)
+            encoding = self.encoder(batch_x_variables, self.use_attention_mechanism)
             predctions, logits = self.decoder(
                 encoding,
                 self.data_loader.targ_encoding_2_embedding,
-                self.data_loader.targ_word_2_encoding[self.data_loader.EOS_TOKEN],
+                self.data_loader.targ_vocab_2_encoding[self.data_loader.EOS_TOKEN],
                 targ_seq_len
             )
             loss = self.loss(logits, batch_y_variables)
@@ -135,3 +139,4 @@ if __name__ == '__main__':
         prune_by_embedding=True
     )
     nmt = NeuralMachineTranslation(data_loader, vocab_size)
+    nmt.train(2, 2)

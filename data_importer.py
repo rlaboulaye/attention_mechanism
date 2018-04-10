@@ -150,6 +150,10 @@ class SentenceTranslationDataset(Dataset):
         else:
             self.targ_word_2_embedding = self._read_embedding(self.targ_lang_embedding_path, self.targ_vocab_2_encoding)
             pickle.dump(self.targ_word_2_embedding, open(cache_targ_emb_path, "wb"))
+        self.targ_encoding_2_embedding = {}
+        for word in self.targ_vocab:
+            if word in self.targ_vocab_2_encoding and word in self.targ_word_2_embedding:
+                self.targ_encoding_2_embedding[self.targ_vocab_2_encoding[word]] = self.targ_word_2_embedding[word]
 
     def _get_cache_src_emb_path(self):
         hash_str = str(abs(hash(
@@ -329,7 +333,7 @@ class SentenceTranslationDataset(Dataset):
         for targ_data in jagged_batch_targ_data:
             pad_width = (0, max_targ_seq_len - len(targ_data))
             if pad_width != (0,0):
-                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=None)
+                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=np.nan)
             batch_targ_data.append(targ_data)
 
         batch_targ_data = np.array(batch_targ_data)
@@ -346,7 +350,7 @@ class SentenceTranslationDataset(Dataset):
 
 if __name__ == '__main__':
     dataset = SentenceTranslationDataset(
-        max_n_sentences=1e5,
+        max_n_sentences=1e4,
         max_vocab_size=1e4,
         max_src_sentence_len=30,
         prune_by_vocab=True,

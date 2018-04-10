@@ -3,7 +3,7 @@ import torch
 from torch import nn
 
 from rnn import RNN
-from Variable import get_variable
+from variable import get_variable
 
 
 class Encoder(nn.Module):

@@ -1,10 +1,11 @@
 import numpy as np
 import torch
-from Variable import get_variable
 
-from Encoder import Encoder
-from Decoder import Decoder
-from AttentionMechanism import AttentionMechanism
+from variable import get_variable
+from encoder import Encoder
+from decoder import Decoder
+from attention_mechanism import AttentionMechanism
+from attention_based_decoder import AttentionBasedDecoder
 
 input_dimension = 8
 hidden_dimension = 5
@@ -33,9 +34,16 @@ state = get_variable(torch.FloatTensor(np.random.rand(batch_size, hidden_dimensi
 attention = AttentionMechanism(hidden_dimension, hidden_dimension * 2)
 print(attention(state, sequence_embeddings))
 
+print('\nDecoder')
 sequence_embedding = encoder(input_embeddings, False)
-print(sequence_embedding.size())
 decoder = Decoder(input_dimension, hidden_dimension * 2, len(vocabulary), num_layers, batch_size)
 output_sequence, logits = decoder(sequence_embedding, embedding_dict, eos_index, sequence_length)
+print(output_sequence)
+print(logits)
+
+print('\nAttention Based Decoder')
+sequence_embedding = encoder(input_embeddings, True)
+attention_based_decoder = AttentionBasedDecoder(input_dimension, hidden_dimension, hidden_dimension * 2, len(vocabulary), num_layers, batch_size)
+output_sequence, logits = attention_based_decoder(sequence_embedding, embedding_dict, eos_index, sequence_length)
 print(output_sequence)
 print(logits)

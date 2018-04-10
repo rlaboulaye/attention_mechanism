@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from Initialization import initialize_weights
+from initialization import initialize_weights
 
 
 class AttentionMechanism(nn.Module):

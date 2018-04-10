@@ -256,19 +256,36 @@ class SentenceTranslationDataset(Dataset):
     def _init_batching(self):
         self.batch_indices_start_indices = [0] * len(self.src_data_by_seq_len_indices)
 
-    def batch(self, src_seq_len, batch_size, drop_last=False, shuffle=True):
-        batch_indices = self._get_batch_indices(src_seq_len, batch_size, drop_last, shuffle)
-        return batch_indices
-        batch_src_data = self._src_batch(batch_indices)
-        batch_targ_data = self._targ_batch(batch_indices)
-        return batch_src_data, batch_targ_data
+    def get_n_batches(self, src_seq_len, batch_size, drop_last=False):
+        try:
+            self._validate_batch_params(src_seq_len, batch_size, drop_last)
+        except:
+            return 0
 
-    def _get_batch_indices(self, src_seq_len, batch_size, drop_last, shuffle):
+        n_data = len(self.src_data_by_seq_len_indices[src_seq_len])
+        n_batches = n_data // batch_size
+        if drop_last == False and batch_size * n_batches < n_data:
+            n_batches += 1
+        return n_batches
+
+    def get_valid_seq_lens(self):
+        return np.array([[i, len(item)] for i, item in enumerate(self.src_data_by_seq_len_indices) if len(item) > 0])
+
+    def _validate_batch_params(self, src_seq_len, batch_size, drop_last):
         if src_seq_len >= len(self.batch_indices_start_indices):
             raise ValueError("src_seq_len is too long")
         if drop_last == True and batch_size > len(self.src_data_by_seq_len_indices[src_seq_len]):
             raise ValueError("not enough data of sequence length {} for a batch of size {}".format(src_seq_len, batch_size))
 
+    def batch(self, src_seq_len, batch_size, drop_last=True, shuffle=True):
+        self._validate_batch_params(src_seq_len, batch_size, drop_last)
+
+        batch_indices = self._get_batch_indices(src_seq_len, batch_size, drop_last, shuffle)
+        batch_src_data = self._src_batch(batch_indices)
+        batch_targ_data = self._targ_batch(batch_indices)
+        return batch_src_data, batch_targ_data
+
+    def _get_batch_indices(self, src_seq_len, batch_size, drop_last, shuffle):
         # get index indices - yes double indexing
         batch_indices_start_index = self.batch_indices_start_indices[src_seq_len]
         batch_indices_end_index = batch_indices_start_index + batch_size
@@ -312,7 +329,7 @@ class SentenceTranslationDataset(Dataset):
         for targ_data in jagged_batch_targ_data:
             pad_width = (0, max_targ_seq_len - len(targ_data))
             if pad_width != (0,0):
-                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=self.targ_vocab_2_encoding[self.EOS_TOKEN])
+                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=None)
             batch_targ_data.append(targ_data)
 
         batch_targ_data = np.array(batch_targ_data)
@@ -340,8 +357,12 @@ if __name__ == '__main__':
     print dataset.pruned_sentence_count
     print len(dataset.src_data), len(dataset.targ_data)
 
-# # for i, item in enumerate(dataset.src_data_by_seq_len_indices):
-# #     print i, len(item)
+    print dataset.get_valid_seq_lens()
+
+    for i, item in enumerate(dataset.src_data_by_seq_len_indices):
+        print i, len(item), dataset.get_n_batches(i, 32, True), dataset.get_n_batches(i, 32, False)
+
+    print dataset.batch(2, 10)
 
 # for s in xrange(7, 42):
 #     for i in xrange(13):

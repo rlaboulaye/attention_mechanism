@@ -326,22 +326,22 @@ class SentenceTranslationDataset(Dataset):
     def _encode_targ_sentence(self, sentence):
         return np.array([self.targ_vocab_2_encoding[word] for word in sentence])
 
-dataset = SentenceTranslationDataset(max_n_sentences=1e4, max_vocab_size=1e4, max_src_sentence_len=40, prune_by_vocab=True, prune_by_embedding=True)#, prune_by_embedding=True)
-print dataset.unknown_src_vocab_count / dataset.known_src_word_count, dataset.unknown_src_embedding_count / dataset.known_src_word_count
-print dataset.unknown_targ_vocab_count / dataset.known_targ_word_count, dataset.unknown_targ_embedding_count / dataset.known_targ_word_count
-print dataset.pruned_sentence_count
-print len(dataset.src_data), len(dataset.targ_data)
+# dataset = SentenceTranslationDataset(max_n_sentences=1e4, max_vocab_size=1e4, max_src_sentence_len=40, prune_by_vocab=True, prune_by_embedding=True)#, prune_by_embedding=True)
+# print dataset.unknown_src_vocab_count / dataset.known_src_word_count, dataset.unknown_src_embedding_count / dataset.known_src_word_count
+# print dataset.unknown_targ_vocab_count / dataset.known_targ_word_count, dataset.unknown_targ_embedding_count / dataset.known_targ_word_count
+# print dataset.pruned_sentence_count
+# print len(dataset.src_data), len(dataset.targ_data)
 
-# for i, item in enumerate(dataset.src_data_by_seq_len_indices):
-#     print i, len(item)
+# # for i, item in enumerate(dataset.src_data_by_seq_len_indices):
+# #     print i, len(item)
 
-for s in xrange(7, 42):
-    for i in xrange(13):
-        try:
-            print s, dataset.batch(s, 5, True, True)
-        except Exception as e:
-            traceback.print_exc()
-        raw_input()
+# for s in xrange(7, 42):
+#     for i in xrange(13):
+#         try:
+#             print s, dataset.batch(s, 5, True, True)
+#         except Exception as e:
+#             traceback.print_exc()
+#         raw_input()
 
 
 # emb_path = "./data/fastText/wiki.de.vec"

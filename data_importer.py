@@ -1,15 +1,10 @@
-# -*- coding: utf-8 -*-
 from __future__ import division
 import os
-import time
-import math
 import io
-import collections
 from itertools import izip
 import numpy as np
 import pickle
 from HTMLParser import HTMLParser
-import traceback
 
 from torch.utils.data import Dataset
 

@@ -6,3 +6,5 @@ data/en-de/train.*
 data/en-es/train.*
 data/en-de/*test*
 data/fastText/wiki.*.vec
+processed_data/en-es/*.en
+processed_data/en-es/*.es

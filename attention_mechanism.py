@@ -25,7 +25,7 @@ class AttentionMechanism(nn.Module):
 			concatenated_embedding = torch.cat((state_tm1, embedding), dim=1)
 			hidden = self.hidden_activation(self.hidden_fc(concatenated_embedding))
 			unnorm_alphas.append(self.output_fc(hidden))
-		alphas = self.probability(torch.cat([torch.unsqueeze(alpha, dim=0) for alpha in unnorm_alphas], dim=0))
+		alphas = self.probability(torch.squeeze(torch.cat([torch.unsqueeze(alpha, dim=0) for alpha in unnorm_alphas], dim=0), dim=-1))
 		weighted_combination = None
 		for i in range(len(embeddings)):
 			weighted_embedding = alphas[i] * embeddings[i]

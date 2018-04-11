@@ -123,7 +123,7 @@ class NeuralMachineTranslation(nn.Module):
             batch_x_variables = [get_variable(torch.FloatTensor(x)) for x in batch_x_values]
             batch_y_variables = [get_variable(torch.LongTensor(y)) for y in batch_y_values]
             encoding = self.encoder(batch_x_variables, self.use_attention_mechanism)
-            predctions, logits = self.decoder(
+            predictions, logits = self.decoder(
                 encoding,
                 self.data_loader.targ_encoding_2_embedding,
                 self.data_loader.targ_word_2_encoding[self.data_loader.EOS_TOKEN],
@@ -131,7 +131,7 @@ class NeuralMachineTranslation(nn.Module):
             )
             loss = self.loss(logits, batch_y_variables)
             losses.append(loss.cpu().data.numpy())
-            error_rate = self.error_rate(logits, batch_y_variables)
+            error_rate = self.error_rate(np.array(predictions), batch_y_values)
             error_rates.append(error_rate)
 
             if optimizer is not None:

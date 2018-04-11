@@ -279,12 +279,10 @@ class SentenceTranslationDataset(Dataset):
         text_index_cache_path = self._get_text_index_cache_path()
 
         if os.path.isfile(src_text_cache_path) and os.path.isfile(targ_text_cache_path) and os.path.isfile(text_index_cache_path):
-            print "cached"
             self.src_data = pickle.load(open(src_text_cache_path, "rb"))
             self.targ_data = pickle.load(open(targ_text_cache_path, "rb"))
             self.src_data_by_seq_len_indices = pickle.load(open(text_index_cache_path, "rb"))
         else:
-            print "not cached"
             self.src_data = []
             self.targ_data = []
             self.src_data_by_seq_len_indices = []

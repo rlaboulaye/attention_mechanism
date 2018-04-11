@@ -13,68 +13,131 @@ import traceback
 
 from torch.utils.data import Dataset
 
+html_parser = HTMLParser()
+def parse_word(word):
+    word = word.strip().lower()
+    word = html_parser.unescape(word)
+    return word
+
+def open_file(path, mode, encoding="utf-8"):
+    return io.open(path, mode, encoding=encoding)
+
+def vocab_intersect(
+    lang_vocab_path = "./data/en-es/vocab.50K.es",
+    embedding_vocab_path = "./data/fastText/wiki.es.vec.vocab",
+    dest_path = "./processed_data/en-es/vocab.es"
+):
+    lang_word_index = {}
+    with open_file(lang_word_path, "r") as f:
+        for i, line in enumerate(f):
+            line = line.strip()
+            if line != "":
+                word = parse_word(line) # one word per line
+                lang_word_index[word] = len(lang_word_index)
+
+    vocab = [None] * len(lang_word_index)
+    with open_file(embedding_vocab_path, "r") as f:
+        for i, line in enumerate(f):
+            line = line.strip()
+            if line != "":
+                word = parse_word(line) # one word per line
+                if word in lang_word_index:
+                    index = lang_word_index[word]
+                    vocab[index] = word
+
+    with open_file(dest_path, "w") as f:
+        for word in vocab:
+            if word is not None:
+                f.write(word + "\n")
+
+def vocab_embeddings(
+    vocab_path = "./processed_data/en-es/vocab.es",
+    embedding_path = "./data/fastText/wiki.es.vec",
+    dest_path = "./processed_data/en-es/embedding.vocab.es"
+):
+    vocab = []
+    word_index = {}
+    with open_file(vocab_path, "r") as f:
+        for i, line in enumerate(f):
+            line = line.strip()
+            if line != "":
+                word = parse_word(line) # one word per line
+                vocab.append(word)
+                word_index[word] = len(word_index)
+
+    embeddings = [None] * len(word_index)
+    with open_file(embedding_path, "r") as f:
+        for i, line in enumerate(f):
+            line = line.strip()
+            if i == 0:
+                embedding_size = line.strip().split(" ")[1]
+            elif line != "": # first line as metadata and skip blank lines (last line)
+                word, str_embedding = line.split(" ", 1)
+                word = parse_word(word)
+                index = word_index.get(word, None)
+                if index is not None:
+                    embeddings[index] = str_embedding
+
+    with open_file(dest_path, "w") as f:
+        f.write(u"{} {}\n".format(len(vocab), embedding_size))
+        for word, embedding in izip(vocab, embeddings):
+            if embedding is None:
+                raise ValueError("invalid vocab at word {}".format(word))
+            f.write(u"{} {}\n".format(word, embedding))
+
 
 class SentenceTranslationDataset(Dataset):
-
-    UNKNOWN_TOKEN = "<unk>"
-    EOS_TOKEN = "</s>"
 
     # default, english to spanish
     def __init__(
         self,
-        src_lang_vocab_path="./data/en-es/vocab.50K.en",
-        targ_lang_vocab_path="./data/en-es/vocab.50K.es",
-        src_lang_embedding_path="./data/fastText/wiki.en.vec",
-        targ_lang_embedding_path="./data/fastText/wiki.es.vec",
-        src_lang_path="./data/en-es/train.en",
-        targ_lang_path="./data/en-es/train.es",
+        src_lang_vocab_path="./processed_data/en-es/vocab.en",
+        targ_lang_vocab_path="./processed_data/en-es/vocab.es",
+        src_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
+        targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.es",
+        src_lang_text_path="./data/en-es/train.en",
+        targ_lang_text_path="./data/en-es/train.es",
         max_vocab_size=None,
         max_n_sentences=None,
         max_src_sentence_len=None,
-        prune_by_vocab=False,
-        prune_by_embedding=False
+        max_targ_sentence_len=None,
+        eos_token="</s>"
     ):
-
-    # english to english
+    # # english to english
     # def __init__(
     #     self,
-    #     src_lang_vocab_path="./data/en-es/vocab.50K.en",
-    #     targ_lang_vocab_path="./data/en-es/vocab.50K.en",
-    #     src_lang_embedding_path="./data/fastText/wiki.en.vec",
-    #     targ_lang_embedding_path="./data/fastText/wiki.en.vec",
-    #     src_lang_path="./data/en-es/train.en",
-    #     targ_lang_path="./data/en-es/train.en",
+    #     src_lang_vocab_path="./processed_data/en-es/vocab.en",
+    #     targ_lang_vocab_path="./processed_data/en-es/vocab.en",
+    #     src_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
+    #     targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
+    #     src_lang_text_path="./data/en-es/train.en",
+    #     targ_lang_text_path="./data/en-es/train.en",
     #     max_vocab_size=None,
     #     max_n_sentences=None,
     #     max_src_sentence_len=None,
-    #     prune_by_vocab=False,
-    #     prune_by_embedding=False
+    #     max_targ_sentence_len=None,
+    #     eos_token="</s>"
     # ):
-
         if max_vocab_size is not None:
             max_vocab_size = int(max_vocab_size)
         if max_n_sentences is not None:
             max_n_sentences = int(max_n_sentences)
         if max_src_sentence_len is not None:
             max_src_sentence_len = int(max_src_sentence_len)
-        if prune_by_vocab != False:
-            prune_by_vocab = True
-        if prune_by_embedding != False:
-            prune_by_embedding = True
+        if max_targ_sentence_len is not None:
+            max_targ_sentence_len = int(max_targ_sentence_len)
 
         self.src_lang_vocab_path = src_lang_vocab_path
         self.targ_lang_vocab_path = targ_lang_vocab_path
         self.src_lang_embedding_path = src_lang_embedding_path
         self.targ_lang_embedding_path = targ_lang_embedding_path
-        self.src_lang_path = src_lang_path
-        self.targ_lang_path = targ_lang_path
+        self.src_lang_text_path = src_lang_text_path
+        self.targ_lang_text_path = targ_lang_text_path
         self.max_vocab_size = max_vocab_size
         self.max_n_sentences = max_n_sentences
         self.max_src_sentence_len = max_src_sentence_len
-        self.prune_by_vocab = prune_by_vocab
-        self.prune_by_embedding = prune_by_embedding
-
-        self.html_parser = HTMLParser()
+        self.max_targ_sentence_len = max_targ_sentence_len
+        self.EOS_TOKEN = eos_token
 
         self.cache_dir = "./.cache/"
         if not os.path.isdir(self.cache_dir):
@@ -85,111 +148,151 @@ class SentenceTranslationDataset(Dataset):
         self._init_text()
         self._init_batching()
 
-    def _open_file(self, path, mode, encoding="utf-8"):
-        return io.open(path, mode, encoding=encoding)
-
-    def _parse_word(self, word):
-        word = word.strip().lower()
-        word = self.html_parser.unescape(word)
-        return word
-
     def _init_vocab(self):
-        self.src_vocab, self.src_vocab_2_encoding = self._read_vocab(self.src_lang_vocab_path)
-        self.targ_vocab, self.targ_vocab_2_encoding = self._read_vocab(self.targ_lang_vocab_path)
+        self.src_vocab, self.src_word_2_encoding = self._read_vocab(self.src_lang_vocab_path)
+        self.targ_vocab, self.targ_word_2_encoding = self._read_vocab(self.targ_lang_vocab_path)
 
     def _read_vocab(self, path):
         vocab = []
-        vocab_2_encoding = {}
-        with self._open_file(path, "r") as f:
+        word_2_encoding = {}
+        with open_file(path, "r") as f:
             for i, line in enumerate(f):
-                line = line.strip()
-                if line == "" or (self.max_vocab_size is not None and i >= self.max_vocab_size):
-                        break
-                word = self._parse_word(line) # one word per line
-                vocab.append(word)
-                vocab_2_encoding[word] = i
+                word = parse_word(line) # one word per line
+                if word != "":
+                    word_2_encoding[word] = len(vocab)
+                    vocab.append(word)
+                if self.max_vocab_size is not None and len(vocab) >= self.max_vocab_size:
+                    break
 
-        if self.UNKNOWN_TOKEN not in vocab_2_encoding:
-            vocab.append(self.UNKNOWN_TOKEN)
-            vocab_2_encoding[self.UNKNOWN_TOKEN] = i
-            i += 1
+        if self.EOS_TOKEN not in word_2_encoding:
+            raise ValueError("EOS token not in vocabulary")
 
+        return vocab, word_2_encoding
 
-        if self.EOS_TOKEN not in vocab_2_encoding:
-            vocab.append(self.EOS_TOKEN)
-            vocab_2_encoding[self.EOS_TOKEN] = i
-            i += 1
+    def _get_src_emb_cache_path(self):
+        hash_str = str(abs(hash(
+            self.src_lang_embedding_path + self.src_lang_vocab_path
+        )))
+        return self.cache_dir + "src_emb_"  + str(self.max_vocab_size) + "_" + hash_str + ".p"
 
-        return vocab, vocab_2_encoding
+    def _get_targ_emb_cache_path(self):
+        hash_str = str(abs(hash(
+            self.targ_lang_embedding_path + self.targ_lang_vocab_path
+        )))
+        return self.cache_dir + "targ_emb_"  + str(self.max_vocab_size) + "_" + hash_str + ".p"
 
     def _init_embedding(self):
-        cache_src_emb_path = self._get_cache_src_emb_path()
-        if os.path.isfile(cache_src_emb_path):
-            self.src_word_2_embedding = pickle.load(open(cache_src_emb_path, "rb"))
-        else:
-            self.src_word_2_embedding = self._read_embedding(self.src_lang_embedding_path, self.src_vocab_2_encoding)
-            pickle.dump(self.src_word_2_embedding, open(cache_src_emb_path, "wb"))
+        cache_src_emb_path = self._get_src_emb_cache_path()
+        self.src_encoding_2_embedding = self._read_embedding(
+            self.src_lang_embedding_path,
+            self.src_vocab,
+            self.src_word_2_encoding,
+            cache_src_emb_path
+        )
 
-        cache_targ_emb_path = self._get_cache_targ_emb_path()
-        if os.path.isfile(cache_targ_emb_path):
-            self.targ_word_2_embedding = pickle.load(open(cache_targ_emb_path, "rb"))
-        else:
-            self.targ_word_2_embedding = self._read_embedding(self.targ_lang_embedding_path, self.targ_vocab_2_encoding)
-            pickle.dump(self.targ_word_2_embedding, open(cache_targ_emb_path, "wb"))
-        self.targ_encoding_2_embedding = {}
-        for word in self.targ_vocab:
-            if word in self.targ_vocab_2_encoding and word in self.targ_word_2_embedding:
-                self.targ_encoding_2_embedding[self.targ_vocab_2_encoding[word]] = self.targ_word_2_embedding[word]
+        cache_targ_emb_path = self._get_targ_emb_cache_path()
+        self.targ_encoding_2_embedding = self._read_embedding(
+            self.targ_lang_embedding_path,
+            self.targ_vocab,
+            self.targ_word_2_encoding,
+            cache_targ_emb_path
+        )
 
-    def _get_cache_src_emb_path(self):
-        hash_str = str(abs(hash(
-            self.src_lang_embedding_path + self.src_lang_vocab_path + str(self.max_vocab_size)
-        )))
-        return self.cache_dir + "src_emb_" + hash_str + ".p"
+    def _read_embedding(self, path, vocab, word_2_encoding, cache_path=None):
+        if cache_path is not None and os.path.isfile(cache_path):
+            return pickle.load(open(cache_path, "rb"))
 
-    def _get_cache_targ_emb_path(self):
-        hash_str = str(abs(hash(
-            self.targ_lang_embedding_path + self.targ_lang_vocab_path + str(self.max_vocab_size)
-        )))
-        return self.cache_dir + "targ_emb_" + hash_str + ".p"
-
-    def _read_embedding(self, path, vocab_lookup):
-        word_2_embedding = {}
-        with self._open_file(path, "r") as f:
+        encoding_2_embedding = {}
+        with open_file(path, "r") as f:
             for i, line in enumerate(f):
-                if i != 0 and line != "":
+                if i == 0:
+                    embedding_size = int(line.strip().split(" ")[1])
+                elif line != "":
                     word, str_embedding = line.strip().split(" ", 1)
-                    word = self._parse_word(word)
-                    if word in vocab_lookup:
-                        word_2_embedding[word] = np.array(str_embedding.split(" "), dtype=float)
-                if len(word_2_embedding) == len(vocab_lookup): # will not get any more words, no matter how much we search
+                    word = parse_word(word)
+                    encoding = word_2_encoding.get(word, None)
+                    if encoding is not None:
+                        embedding = np.array(str_embedding.split(" "), dtype=float)
+                        encoding_2_embedding[encoding] = embedding
+                if len(encoding_2_embedding) >= len(word_2_encoding): # will not get any more words, no matter how much we search
                     break
-        embedding_size = word_2_embedding.itervalues().next().shape[0]
-        word_2_embedding[self.UNKNOWN_TOKEN] = np.zeros(embedding_size)
-        if self.EOS_TOKEN not in word_2_embedding:
+
+        self._validate_vocab(path, vocab, word_2_encoding, encoding_2_embedding)
+
+        if cache_path is not None:
+            pickle.dump(encoding_2_embedding, open(cache_path, "wb"))
+
+        return encoding_2_embedding
+
+    def _validate_vocab(self, path, vocab, word_2_encoding, encoding_2_embedding):
+        if word_2_encoding[self.EOS_TOKEN] not in encoding_2_embedding:
             raise ValueError(path + " does not contain an end of sequence embedding")
-        return word_2_embedding
+
+        for encoding in encoding_2_embedding:
+            try:
+                word = vocab[encoding]
+                if word_2_encoding[word] != encoding:
+                    raise Exception()
+            except:
+                raise ValueError("invalid vocab {} {}".format(word, encoding))
+
+    def _get_src_text_cache_path(self):
+        hash_str = str(abs(hash(
+            self.src_lang_vocab_path + self.src_lang_embedding_path + self.src_lang_text_path
+        )))
+        return "{}src_text_v{}_n{}_l{}_{}.p".format(
+            self.cache_dir,
+            self.max_vocab_size,
+            self.max_n_sentences,
+            self.max_src_sentence_len,
+            hash_str
+        )
+
+    def _get_targ_text_cache_path(self):
+        hash_str = str(abs(hash(
+            self.targ_lang_vocab_path + self.targ_lang_embedding_path + self.targ_lang_text_path
+        )))
+        return "{}src_text_v{}_n{}_l{}_{}.p".format(
+            self.cache_dir,
+            self.max_vocab_size,
+            self.max_n_sentences,
+            self.max_targ_sentence_len,
+            hash_str
+        )
 
     def _init_text(self):
         self.known_src_word_count = 0
-        self.unknown_src_vocab_count = 0
-        self.unknown_src_embedding_count = 0
+        self.unknown_src_word_count = 0
         self.known_targ_word_count = 0
-        self.unknown_targ_vocab_count = 0
-        self.unknown_targ_embedding_count = 0
+        self.unknown_targ_word_count = 0
         self.pruned_sentence_count = 0
 
         self.src_data = []
         self.targ_data = []
         self.src_data_by_seq_len_indices = []
-        with self._open_file(self.src_lang_path, "r") as f_src, self._open_file(self.targ_lang_path, "r") as f_targ:
+        with open_file(self.src_lang_text_path, "r") as f_src, open_file(self.targ_lang_text_path, "r") as f_targ:
             for i, (src_line, targ_line) in enumerate(izip(f_src, f_targ)):
-                src_sentence = self._parse_text_line(src_line, "src")
-                targ_sentence = self._parse_text_line(targ_line, "targ")
+                src_sentence, unknown_src_word_count = self._parse_text_line(
+                    src_line,
+                    self.src_word_2_encoding,
+                    self.src_encoding_2_embedding
+                )
+                self.known_src_word_count += len(src_sentence) - unknown_src_word_count
+                self.unknown_src_word_count += unknown_src_word_count
 
-                if None in [src_sentence, targ_sentence]: # it was pruned for containing an unknown word
+                targ_sentence, unknown_targ_word_count = self._parse_text_line(
+                    targ_line,
+                    self.targ_word_2_encoding,
+                    self.targ_encoding_2_embedding
+                )
+                self.known_targ_word_count += len(targ_sentence) - unknown_targ_word_count
+                self.unknown_targ_word_count += unknown_targ_word_count
+
+                if unknown_src_word_count > 0 or unknown_targ_word_count > 0:
                     self.pruned_sentence_count += 1
                 elif self.max_src_sentence_len is not None and len(src_sentence) > self.max_src_sentence_len:
+                    self.pruned_sentence_count += 1
+                elif self.max_targ_sentence_len is not None and len(targ_sentence) > self.max_targ_sentence_len:
                     self.pruned_sentence_count += 1
                 else:
                     self.src_data.append(src_sentence)
@@ -203,62 +306,25 @@ class SentenceTranslationDataset(Dataset):
                 if self.max_n_sentences is not None and len(self.src_data) >= self.max_n_sentences:
                     break
 
-    def _parse_text_line(self, line, line_type):
-        if line_type == "src":
-            vocab_lookup = self.src_vocab_2_encoding
-            word_2_embedding = self.src_word_2_embedding
-        elif line_type == "targ":
-            vocab_lookup = self.targ_vocab_2_encoding
-            word_2_embedding = self.targ_word_2_embedding
-        else:
-            raise ValueError("invalid line_type")
-
-        unknown_vocab_count = 0
-        unknown_embedding_count = 0
+    def _parse_text_line(self, line, word_2_encoding, encoding_2_embedding):
+        unknown_word_count = 0
         sentence = []
         for word in line.strip().split(" "):
-            word = self._parse_word(word)
-            if word not in vocab_lookup:
-                unknown_vocab_count += 1
-                word = self.UNKNOWN_TOKEN
-            elif word not in word_2_embedding:
-                unknown_embedding_count += 1
-                word = self.UNKNOWN_TOKEN
-            sentence.append(word)
-        sentence.append(self.EOS_TOKEN)
+            word = parse_word(word)
+            encoding = word_2_encoding.get(word, None)
+            if encoding is None:
+                unknown_word_count += 1
+            elif encoding not in encoding_2_embedding:
+                raise ValueError("encoding not in embedding")
+            sentence.append(encoding)
+        sentence.append(word_2_encoding[self.EOS_TOKEN])
 
-        if line_type == "src":
-            self.known_src_word_count += len(sentence) - unknown_vocab_count - unknown_embedding_count
-            self.unknown_src_vocab_count += unknown_vocab_count
-            self.unknown_src_embedding_count += unknown_embedding_count
-        elif line_type == "targ":
-            self.known_targ_word_count += len(sentence) - unknown_vocab_count - unknown_embedding_count
-            self.unknown_targ_vocab_count += unknown_vocab_count
-            self.unknown_targ_embedding_count += unknown_embedding_count
-
-        if self.prune_by_vocab == True and unknown_vocab_count > 0:
-            return None
-        elif self.prune_by_embedding == True and unknown_embedding_count > 0:
-            return None
-        else:
-            return sentence
+        return sentence, unknown_word_count
 
     def _init_batching(self):
         self.batch_indices_start_indices = [0] * len(self.src_data_by_seq_len_indices)
 
-    def get_n_batches(self, src_seq_len, batch_size, drop_last=False):
-        try:
-            self._validate_batch_params(src_seq_len, batch_size, drop_last)
-        except:
-            return 0
-
-        n_data = len(self.src_data_by_seq_len_indices[src_seq_len])
-        n_batches = n_data // batch_size
-        if drop_last == False and batch_size * n_batches < n_data:
-            n_batches += 1
-        return n_batches
-
-    def get_valid_seq_lens(self):
+    def get_valid_src_seq_lens(self):
         return np.array([[i, len(item)] for i, item in enumerate(self.src_data_by_seq_len_indices) if len(item) > 0])
 
     def _validate_batch_params(self, src_seq_len, batch_size, drop_last):
@@ -267,12 +333,25 @@ class SentenceTranslationDataset(Dataset):
         if drop_last == True and batch_size > len(self.src_data_by_seq_len_indices[src_seq_len]):
             raise ValueError("not enough data of sequence length {} for a batch of size {}".format(src_seq_len, batch_size))
 
+    def get_n_batches(self, src_seq_len, batch_size, drop_last=False):
+        try:
+            self._validate_batch_params(src_seq_len, batch_size, drop_last)
+        except ValueError:
+            return 0
+
+        n_data = len(self.src_data_by_seq_len_indices[src_seq_len])
+        n_batches = n_data // batch_size
+        if drop_last == False and batch_size * n_batches < n_data:
+            n_batches += 1
+        return n_batches
+
     def batch(self, src_seq_len, batch_size, drop_last=True, shuffle=True):
         self._validate_batch_params(src_seq_len, batch_size, drop_last)
 
         batch_indices = self._get_batch_indices(src_seq_len, batch_size, drop_last, shuffle)
         batch_src_data = self._src_batch(batch_indices)
         batch_targ_data = self._targ_batch(batch_indices)
+
         return batch_src_data, batch_targ_data
 
     def _get_batch_indices(self, src_seq_len, batch_size, drop_last, shuffle):
@@ -306,79 +385,52 @@ class SentenceTranslationDataset(Dataset):
         batch_src_data = np.swapaxes(batch_src_data, 0, 1)
         return batch_src_data
 
+    def _embed_src_sentence(self, sentence):
+        return np.array([self.src_encoding_2_embedding[encoding] for encoding in sentence])
+
     def _targ_batch(self, batch_indices):
         # get max targ seq len
-        max_targ_seq_len = 0
         jagged_batch_targ_data = []
+        batch_max_targ_sentence_len = 0
         for i in batch_indices:
-            jagged_batch_targ_data.append(self._encode_targ_sentence(self.targ_data[i]))
-            max_targ_seq_len = max(max_targ_seq_len, len(jagged_batch_targ_data[-1]))
+            jagged_batch_targ_data.append(self.targ_data[i])
+            batch_max_targ_sentence_len = max(batch_max_targ_sentence_len, len(self.targ_data[i]))
 
         # pad targ batch to max seq len and encode
         batch_targ_data = []
         for targ_data in jagged_batch_targ_data:
-            pad_width = (0, max_targ_seq_len - len(targ_data))
+            pad_width = (0, batch_max_targ_sentence_len - len(targ_data))
             if pad_width != (0,0):
                 targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=np.nan)
             batch_targ_data.append(targ_data)
 
         batch_targ_data = np.array(batch_targ_data)
         batch_targ_data = np.swapaxes(batch_targ_data, 0, 1)
-
         return batch_targ_data
-
-    def _embed_src_sentence(self, sentence):
-        return np.array([self.src_word_2_embedding[word] for word in sentence])
-
-    def _encode_targ_sentence(self, sentence):
-        return np.array([self.targ_vocab_2_encoding[word] for word in sentence])
 
 
 if __name__ == '__main__':
     dataset = SentenceTranslationDataset(
-        max_n_sentences=1e4,
-        max_vocab_size=1e4,
+        max_vocab_size=3e3,
+        max_n_sentences=1e6,
         max_src_sentence_len=30,
-        prune_by_vocab=True,
-        prune_by_embedding=True
+        max_targ_sentence_len=30
     )
-    print dataset.unknown_src_vocab_count / dataset.known_src_word_count, dataset.unknown_src_embedding_count / dataset.known_src_word_count
-    print dataset.unknown_targ_vocab_count / dataset.known_targ_word_count, dataset.unknown_targ_embedding_count / dataset.known_targ_word_count
+    print dataset.unknown_src_word_count / dataset.known_src_word_count
+    print dataset.unknown_targ_word_count / dataset.known_targ_word_count
     print dataset.pruned_sentence_count
     print len(dataset.src_data), len(dataset.targ_data)
 
-    print dataset.get_valid_seq_lens()
+    for seq_len, n_sentences in dataset.get_valid_src_seq_lens():
+        print seq_len
+        for _ in xrange(100):
+            dataset.batch(seq_len, 100, True, True)
+        print "passed drop last"
+        for _ in xrange(100):
+            dataset.batch(seq_len, 100, False, True)
+        print "passed include last"
 
-    for i, item in enumerate(dataset.src_data_by_seq_len_indices):
-        print i, len(item), dataset.get_n_batches(i, 32, True), dataset.get_n_batches(i, 32, False)
+    # print dataset.get_valid_src_seq_lens()
 
-    print dataset.batch(2, 10)
-
-# for s in xrange(7, 42):
-#     for i in xrange(13):
-#         try:
-#             print s, dataset.batch(s, 5, True, True)
-#         except Exception as e:
-#             traceback.print_exc()
-#         raw_input()
-
-
-# emb_path = "./data/fastText/wiki.de.vec"
-# word_2_embedding = {}
-# with io.open(emb_path, "r", encoding="utf-8") as f:
-#     for i, line in enumerate(f):
-#         if i != 0 and line != "":
-#             word, str_embedding = line.strip().split(" ", 1)
-#             word = word.lower()
-#             word_2_embedding[word] = np.array(str_embedding.split(" "), dtype=float)
-#         if i == 100:
-#             break
-# print word_2_embedding.keys()
-
-# lang_path = "./data/en-de/"
-# with io.open(lang_path, "r", encoding="utf-8") as f:
-#     for i, line in enumerate(f):
-#         print line
-#         if i == 10:
-#             break
-
+    # for i, item in enumerate(dataset.src_data_by_seq_len_indices):
+    #     print i, len(item), dataset.get_n_batches(i, 32, True), dataset.get_n_batches(i, 32, False)

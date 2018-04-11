@@ -247,11 +247,23 @@ class SentenceTranslationDataset(Dataset):
         hash_str = str(abs(hash(
             self.targ_lang_vocab_path + self.targ_lang_embedding_path + self.targ_lang_text_path
         )))
-        return "{}src_text_v{}_n{}_l{}_{}.p".format(
+        return "{}targ_text_v{}_n{}_l{}_{}.p".format(
             self.cache_dir,
             self.max_vocab_size,
             self.max_n_sentences,
             self.max_targ_sentence_len,
+            hash_str
+        )
+
+    def _get_text_index_cache_path(self):
+        hash_str = str(abs(hash(
+            self.src_lang_vocab_path + self.src_lang_embedding_path + self.src_lang_text_path
+        )))
+        return "{}text_index_v{}_n{}_l{}_{}.p".format(
+            self.cache_dir,
+            self.max_vocab_size,
+            self.max_n_sentences,
+            self.max_src_sentence_len,
             hash_str
         )
 
@@ -262,44 +274,59 @@ class SentenceTranslationDataset(Dataset):
         self.unknown_targ_word_count = 0
         self.pruned_sentence_count = 0
 
-        self.src_data = []
-        self.targ_data = []
-        self.src_data_by_seq_len_indices = []
-        with open_file(self.src_lang_text_path, "r") as f_src, open_file(self.targ_lang_text_path, "r") as f_targ:
-            for i, (src_line, targ_line) in enumerate(izip(f_src, f_targ)):
-                src_sentence, unknown_src_word_count = self._parse_text_line(
-                    src_line,
-                    self.src_word_2_encoding,
-                    self.src_encoding_2_embedding
-                )
-                self.known_src_word_count += len(src_sentence) - unknown_src_word_count
-                self.unknown_src_word_count += unknown_src_word_count
+        src_text_cache_path = self._get_src_text_cache_path()
+        targ_text_cache_path = self._get_targ_text_cache_path()
+        text_index_cache_path = self._get_text_index_cache_path()
 
-                targ_sentence, unknown_targ_word_count = self._parse_text_line(
-                    targ_line,
-                    self.targ_word_2_encoding,
-                    self.targ_encoding_2_embedding
-                )
-                self.known_targ_word_count += len(targ_sentence) - unknown_targ_word_count
-                self.unknown_targ_word_count += unknown_targ_word_count
+        if os.path.isfile(src_text_cache_path) and os.path.isfile(targ_text_cache_path) and os.path.isfile(text_index_cache_path):
+            print "cached"
+            self.src_data = pickle.load(open(src_text_cache_path, "rb"))
+            self.targ_data = pickle.load(open(targ_text_cache_path, "rb"))
+            self.src_data_by_seq_len_indices = pickle.load(open(text_index_cache_path, "rb"))
+        else:
+            print "not cached"
+            self.src_data = []
+            self.targ_data = []
+            self.src_data_by_seq_len_indices = []
+            with open_file(self.src_lang_text_path, "r") as f_src, open_file(self.targ_lang_text_path, "r") as f_targ:
+                for i, (src_line, targ_line) in enumerate(izip(f_src, f_targ)):
+                    src_sentence, unknown_src_word_count = self._parse_text_line(
+                        src_line,
+                        self.src_word_2_encoding,
+                        self.src_encoding_2_embedding
+                    )
+                    self.known_src_word_count += len(src_sentence) - unknown_src_word_count
+                    self.unknown_src_word_count += unknown_src_word_count
 
-                if unknown_src_word_count > 0 or unknown_targ_word_count > 0:
-                    self.pruned_sentence_count += 1
-                elif self.max_src_sentence_len is not None and len(src_sentence) > self.max_src_sentence_len:
-                    self.pruned_sentence_count += 1
-                elif self.max_targ_sentence_len is not None and len(targ_sentence) > self.max_targ_sentence_len:
-                    self.pruned_sentence_count += 1
-                else:
-                    self.src_data.append(src_sentence)
-                    self.targ_data.append(targ_sentence)
+                    targ_sentence, unknown_targ_word_count = self._parse_text_line(
+                        targ_line,
+                        self.targ_word_2_encoding,
+                        self.targ_encoding_2_embedding
+                    )
+                    self.known_targ_word_count += len(targ_sentence) - unknown_targ_word_count
+                    self.unknown_targ_word_count += unknown_targ_word_count
 
-                    # store indices to src data by sequence length
-                    while len(self.src_data_by_seq_len_indices) <= len(src_sentence):
-                        self.src_data_by_seq_len_indices.append([])
-                    self.src_data_by_seq_len_indices[len(src_sentence)].append(len(self.src_data)-1)
+                    if unknown_src_word_count > 0 or unknown_targ_word_count > 0:
+                        self.pruned_sentence_count += 1
+                    elif self.max_src_sentence_len is not None and len(src_sentence) > self.max_src_sentence_len:
+                        self.pruned_sentence_count += 1
+                    elif self.max_targ_sentence_len is not None and len(targ_sentence) > self.max_targ_sentence_len:
+                        self.pruned_sentence_count += 1
+                    else:
+                        self.src_data.append(src_sentence)
+                        self.targ_data.append(targ_sentence)
 
-                if self.max_n_sentences is not None and len(self.src_data) >= self.max_n_sentences:
-                    break
+                        # store indices to src data by sequence length
+                        while len(self.src_data_by_seq_len_indices) <= len(src_sentence):
+                            self.src_data_by_seq_len_indices.append([])
+                        self.src_data_by_seq_len_indices[len(src_sentence)].append(len(self.src_data)-1)
+
+                    if self.max_n_sentences is not None and len(self.src_data) >= self.max_n_sentences:
+                        break
+
+            pickle.dump(self.src_data, open(src_text_cache_path, "wb"))
+            pickle.dump(self.targ_data, open(targ_text_cache_path, "wb"))
+            pickle.dump(self.src_data_by_seq_len_indices, open(text_index_cache_path, "wb"))
 
     def _parse_text_line(self, line, word_2_encoding, encoding_2_embedding):
         unknown_word_count = 0
@@ -411,9 +438,12 @@ if __name__ == '__main__':
         max_src_sentence_len=30,
         max_targ_sentence_len=30
     )
-    print dataset.unknown_src_word_count / dataset.known_src_word_count
-    print dataset.unknown_targ_word_count / dataset.known_targ_word_count
-    print dataset.pruned_sentence_count
+    try:
+        print dataset.unknown_src_word_count / dataset.known_src_word_count
+        print dataset.unknown_targ_word_count / dataset.known_targ_word_count
+        print dataset.pruned_sentence_count
+    except:
+        pass
     print len(dataset.src_data), len(dataset.targ_data)
 
     for seq_len, n_sentences in dataset.get_valid_src_seq_lens():

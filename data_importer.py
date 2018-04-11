@@ -80,6 +80,29 @@ def vocab_embeddings(
                 raise ValueError("invalid vocab at word {}".format(word))
             f.write(u"{} {}\n".format(word, embedding))
 
+def split_data(
+    src_lang_path="./data/en-es/train.en",
+    targ_lang_path="./data/en-es/train.es",
+    dest_src_lang_path="./processed_data/en-es/text.en",
+    dest_targ_lang_path="./processed_data/en-es/text.es",
+    split_ratio=.9
+):
+    with \
+        open_file(src_lang_path, "r") as f_src,\
+        open_file(targ_lang_path, "r") as f_targ,\
+        open_file(dest_src_lang_path+".train", "w") as f_src_train,\
+        open_file(dest_src_lang_path+".test", "w") as f_src_test,\
+        open_file(dest_targ_lang_path+".train", "w") as f_targ_train,\
+        open_file(dest_targ_lang_path+".test", "w") as f_targ_test\
+    :
+        for src_line, targ_line in izip(f_src, f_targ):
+            if np.random.rand() < split_ratio:
+                f_src_train.write(src_line)
+                f_targ_train.write(targ_line)
+            else:
+                f_src_test.write(src_line)
+                f_targ_test.write(targ_line)
+
 
 class SentenceTranslationDataset(Dataset):
     # todo train/test split

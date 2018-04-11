@@ -8,3 +8,5 @@ data/en-de/*test*
 data/fastText/wiki.*.vec
 processed_data/en-es/*.en
 processed_data/en-es/*.es
+processed_data/en-es/*.train
+processed_data/en-es/*.test

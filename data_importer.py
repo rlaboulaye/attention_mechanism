@@ -82,6 +82,7 @@ def vocab_embeddings(
 
 
 class SentenceTranslationDataset(Dataset):
+    # todo train/test split
 
     # default, english to spanish
     def __init__(
@@ -421,10 +422,9 @@ class SentenceTranslationDataset(Dataset):
         for targ_data in jagged_batch_targ_data:
             pad_width = (0, batch_max_targ_sentence_len - len(targ_data))
             if pad_width != (0,0):
-                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=np.nan)
+                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=-1)
             batch_targ_data.append(targ_data)
 
-        batch_targ_data = np.array(batch_targ_data)
         batch_targ_data = np.swapaxes(batch_targ_data, 0, 1)
         return batch_targ_data
 

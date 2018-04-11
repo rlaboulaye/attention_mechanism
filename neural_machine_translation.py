@@ -96,7 +96,7 @@ class NeuralMachineTranslation(nn.Module):
         # todo save wieghts
 
     def _epoch(self, epoch_size, optimizer=None):
-        src_seq_lens = self.data_loader.get_valid_seq_lens()
+        src_seq_lens = self.data_loader.get_valid_src_seq_lens()
         src_seq_len_probs = src_seq_lens[:,1] / np.sum(src_seq_lens[:,1])
 
         losses = []
@@ -106,12 +106,12 @@ class NeuralMachineTranslation(nn.Module):
             batch_x_values, batch_y_values = data_loader.batch(src_seq_len, self.batch_size)
             targ_seq_len = batch_y_values.shape[0]
             batch_x_variables = [get_variable(torch.FloatTensor(x)) for x in batch_x_values]
-            batch_y_variables = [get_variable(torch.FloatTensor(y)) for y in batch_y_values]
+            batch_y_variables = [get_variable(torch.LongTensor(y)) for y in batch_y_values]
             encoding = self.encoder(batch_x_variables, self.use_attention_mechanism)
             predctions, logits = self.decoder(
                 encoding,
                 self.data_loader.targ_encoding_2_embedding,
-                self.data_loader.targ_vocab_2_encoding[self.data_loader.EOS_TOKEN],
+                self.data_loader.targ_word_2_encoding[self.data_loader.EOS_TOKEN],
                 targ_seq_len
             )
             loss = self.loss(logits, batch_y_variables)
@@ -130,13 +130,16 @@ class NeuralMachineTranslation(nn.Module):
         pass
 
 if __name__ == '__main__':
-    vocab_size = 1e4
+    vocab_size = 3e3
     data_loader = SentenceTranslationDataset(
-        max_n_sentences=1e4,
         max_vocab_size=vocab_size,
+        max_n_sentences=1e6,
         max_src_sentence_len=30,
-        prune_by_vocab=True,
-        prune_by_embedding=True
+        max_targ_sentence_len=30
     )
+    print "data loaded"
+
     nmt = NeuralMachineTranslation(data_loader, vocab_size)
+    print "nmt initialized"
+
     nmt.train(2, 2)

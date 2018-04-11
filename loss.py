@@ -14,5 +14,5 @@ class SequenceLoss(nn.Module):
 			mask = targets != -1
 			batch_loss = self.element_loss(logits, targets)
 			masked_batch_loss = mask.float() * batch_loss
-			losses.append(masked_batch_loss.mean())
+			losses.append(masked_batch_loss.sum() / mask.float().sum())
 		return np.mean(losses)

@@ -39,7 +39,7 @@ class Decoder(nn.Module):
 	def _get_output(self, hidden_state):
 		logits = self.fc(hidden_state)
 		probabilities = self.output_activation(logits)
-		indices = [np.random.multinomial(1, probability_distribution.data).argmax() for probability_distribution in probabilities]
+		indices = [np.random.multinomial(1, probability_distribution.cpu().data.numpy()).argmax() for probability_distribution in probabilities]
 		return indices, logits
 
 	def forward(self, sequence_embedding, embedding_dict, eos_index, training_sequence_length=None):

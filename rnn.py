@@ -21,6 +21,9 @@ class RNN(nn.Module):
 					self.layers.append(bottom_time_cell(self.input_dimension, self.hidden_dimension))
 			else:
 				self.layers.append(stacked_time_cell(self.hidden_dimension, self.hidden_dimension))
+		if torch.cuda.is_available():
+			for i in range(num_layers):
+				self.layers[i] = self.layers[i].cuda()
 
 	def forward(self, x_t, h_tm1, context=None):
 		h_t = []

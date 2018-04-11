@@ -44,4 +44,6 @@ if __name__ == '__main__':
     # nmt = NeuralMachineTranslation(data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB, stacked_time_cell=ContextEnhancedGRUCellB)
     print "nmt initialized"
 
+    print "training {}".format(identifying_str)
+
     nmt.train(num_epochs, epoch_size, learning_rate, new_encoder_weights, new_decoder_weights, loss_path, error_rate_path)

@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+import inspect
+
 from gru_cell import GRUCell
 
 
@@ -16,12 +18,15 @@ class RNN(nn.Module):
 		self.layers = []
 		for i in range(num_layers):
 			if i == 0:
-				if self.context_dimension is not None:
+				if 'context_dimension' in inspect.getargspec(bottom_time_cell.__init__)[0]:
 					self.layers.append(bottom_time_cell(self.input_dimension, self.hidden_dimension, self.context_dimension))
 				else:
 					self.layers.append(bottom_time_cell(self.input_dimension, self.hidden_dimension))
 			else:
-				self.layers.append(stacked_time_cell(self.hidden_dimension, self.hidden_dimension))
+				if 'context_dimension' in inspect.getargspec(stacked_time_cell.__init__)[0]:
+					self.layers.append(stacked_time_cell(self.hidden_dimension, self.hidden_dimension, self.context_dimension))
+				else:
+					self.layers.append(stacked_time_cell(self.hidden_dimension, self.hidden_dimension))
 		if torch.cuda.is_available():
 			for i in range(num_layers):
 				self.layers[i] = self.layers[i].cuda()
@@ -29,7 +34,7 @@ class RNN(nn.Module):
 	def forward(self, x_t, h_tm1, context=None):
 		h_t = []
 		for i, layer in enumerate(self.layers):
-			if context is not None and i == 0:
+			if len(inspect.getargspec(layer.forward)[0]) > 3:
 				h_t.append(layer(x_t, h_tm1[i], context))
 			else:
 				h_t.append(layer(x_t, h_tm1[i]))

@@ -6,7 +6,7 @@ from context_enhanced_gru_cell_b import ContextEnhancedGRUCellB
 if __name__ == '__main__':
 
     vocab_size = 3e3
-    target_language = 'en'
+    target_language = 'es'
     num_epochs = 10
     epoch_size = 10
     learning_rate = 1e-5

@@ -7,15 +7,19 @@ if __name__ == '__main__':
 
     vocab_size = 3e3
     target_language = 'es'
-    num_epochs = 10
-    epoch_size = 10
+    num_epochs = 30
+    epoch_size = 1000
     learning_rate = 1e-5
+
+    identifying_str = 'es_no_attention'
 
     # old_encoder_weights = 'weights/encoder_weights'
     # old_decoder_weights = 'weights/decoder_weights'
 
-    new_encoder_weights = 'weights/encoder_weights'
-    new_decoder_weights = 'weights/decoder_weights'
+    new_encoder_weights = 'weights/encoder_weights_{}'.format(identifying_str)
+    new_decoder_weights = 'weights/decoder_weights_{}'.format(identifying_str)
+
+    loss_path = 'losses_{}.npy'.format(identifying_str)
 
     targ_lang_vocab_path="./processed_data/en-es/vocab.{}".format(target_language)
     targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.{}".format(target_language)
@@ -37,4 +41,4 @@ if __name__ == '__main__':
     # nmt = NeuralMachineTranslation(data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB)
     print "nmt initialized"
 
-    nmt.train(num_epochs, epoch_size, learning_rate)
+    nmt.train(num_epochs, epoch_size, learning_rate, new_encoder_weights, new_decoder_weights, loss_path)

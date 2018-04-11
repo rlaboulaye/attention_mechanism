@@ -89,7 +89,7 @@ class NeuralMachineTranslation(nn.Module):
         self.batch_size = batch_size
         self.use_attention_mechanism = use_attention_mechanism
 
-    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5, encoder_path='weights/encoder_weights', decoder_path='weights/decoder_weights'):
+    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5, encoder_path='weights/encoder_weights', decoder_path='weights/decoder_weights', loss_path='losses.npy'):
         optimizer = torch.optim.Adam(itertools.chain(self.encoder.parameters(), self.decoder.parameters()), lr=learning_rate)
         train_losses = []
         start_time = time.time()
@@ -100,6 +100,7 @@ class NeuralMachineTranslation(nn.Module):
             print('Elapsed Time: {}'.format(time.time() - start_time))
             torch.save(self.encoder, encoder_path)
             torch.save(self.decoder, decoder_path)
+        np.save(loss_path, np.array(losses))
 
     def _epoch(self, epoch_size, optimizer=None):
         src_seq_lens = self.data_loader.get_valid_src_seq_lens()

@@ -108,7 +108,7 @@ class NeuralMachineTranslation(nn.Module):
 
         losses = []
         for i in xrange(epoch_size):
-            src_seq_len_index = np.argmax(np.random.multinomial(1, src_seq_len_probs))
+            src_seq_len_index = np.argmax(np.random.multinomial(1, .9999 * src_seq_len_probs))
             src_seq_len = src_seq_lens[src_seq_len_index, 0]
             batch_x_values, batch_y_values = self.data_loader.batch(src_seq_len, self.batch_size)
             targ_seq_len = batch_y_values.shape[0]

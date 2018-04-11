@@ -1,7 +1,9 @@
+import time
+import itertools
+
+import numpy as np
 import torch
 from torch import nn
-import numpy as np
-import itertools
 
 from data_importer import SentenceTranslationDataset
 from encoder import Encoder
@@ -87,13 +89,17 @@ class NeuralMachineTranslation(nn.Module):
         self.batch_size = batch_size
         self.use_attention_mechanism = use_attention_mechanism
 
-    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5):
+    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5, encoder_path='weights/encoder_weights', decoder_path='weights/decoder_weights'):
         optimizer = torch.optim.Adam(itertools.chain(self.encoder.parameters(), self.decoder.parameters()), lr=learning_rate)
         train_losses = []
+        start_time = time.time()
         for e in xrange(num_epochs):
+            print('Epoch {}'.format(e))
             train_losses += self._epoch(epoch_size, optimizer)
             # test_losses += self._epoch(epoch_size) # todo
-        # todo save wieghts
+            print('Elapsed Time: {}'.format(time.time() - start_time))
+            torch.save(self.encoder, encoder_path)
+            torch.save(self.decoder, decoder_path)
 
     def _epoch(self, epoch_size, optimizer=None):
         src_seq_lens = self.data_loader.get_valid_src_seq_lens()
@@ -103,7 +109,7 @@ class NeuralMachineTranslation(nn.Module):
         for i in xrange(epoch_size):
             src_seq_len_index = np.argmax(np.random.multinomial(1, src_seq_len_probs))
             src_seq_len = src_seq_lens[src_seq_len_index, 0]
-            batch_x_values, batch_y_values = data_loader.batch(src_seq_len, self.batch_size)
+            batch_x_values, batch_y_values = self.data_loader.batch(src_seq_len, self.batch_size)
             targ_seq_len = batch_y_values.shape[0]
             batch_x_variables = [get_variable(torch.FloatTensor(x)) for x in batch_x_values]
             batch_y_variables = [get_variable(torch.LongTensor(y)) for y in batch_y_values]
@@ -115,31 +121,16 @@ class NeuralMachineTranslation(nn.Module):
                 targ_seq_len
             )
             loss = self.loss(logits, batch_y_variables)
-            losses.append(loss)
+            losses.append(loss.data)
 
             if optimizer is not None:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-        print np.mean(losses)
+        print('Mean Loss: {}'.format(np.mean(losses)))
         return losses
 
     def translate(self):
         # todo
         pass
-
-if __name__ == '__main__':
-    vocab_size = 3e3
-    data_loader = SentenceTranslationDataset(
-        max_vocab_size=vocab_size,
-        max_n_sentences=1e6,
-        max_src_sentence_len=30,
-        max_targ_sentence_len=30
-    )
-    print "data loaded"
-
-    nmt = NeuralMachineTranslation(data_loader, vocab_size)
-    print "nmt initialized"
-
-    nmt.train(2, 2)

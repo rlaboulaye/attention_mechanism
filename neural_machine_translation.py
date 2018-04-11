@@ -10,6 +10,7 @@ from encoder import Encoder
 from decoder import Decoder
 from attention_based_decoder import AttentionBasedDecoder
 from loss import SequenceLoss
+from error_rate import ErrorRate
 from gru_cell import GRUCell
 from context_enhanced_gru_cell_a import ContextEnhancedGRUCellA
 from context_enhanced_gru_cell_b import ContextEnhancedGRUCellB
@@ -80,33 +81,40 @@ class NeuralMachineTranslation(nn.Module):
                 self.decoder = torch.load(decoder_weights, map_location=lambda storage, loc: storage)
 
         self.loss = SequenceLoss()
+        self.error_rate = ErrorRate()
 
         if torch.cuda.is_available():
             self.encoder = self.encoder.cuda()
             self.decoder = self.decoder.cuda()
             self.loss = self.loss.cuda()
+            self.error_rate = self.error_rate.cuda()
 
         self.batch_size = batch_size
         self.use_attention_mechanism = use_attention_mechanism
 
-    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5, encoder_path='weights/encoder_weights', decoder_path='weights/decoder_weights', loss_path='losses.npy'):
+    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5, encoder_path='weights/encoder_weights', decoder_path='weights/decoder_weights', loss_path='losses/losses.npy', error_rate_path='losses/error_rates.npy'):
         optimizer = torch.optim.Adam(itertools.chain(self.encoder.parameters(), self.decoder.parameters()), lr=learning_rate)
         train_losses = []
+        train_error_rates = []
         start_time = time.time()
         for e in xrange(num_epochs):
             print('Epoch {}'.format(e))
-            train_losses += self._epoch(epoch_size, optimizer)
+            train_loss, train_error_rate = self._epoch(epoch_size, optimizer)
+            train_losses += train_loss
+            train_error_rates += train_error_rate
             # test_losses += self._epoch(epoch_size) # todo
             print('Elapsed Time: {}'.format(time.time() - start_time))
             torch.save(self.encoder, encoder_path)
             torch.save(self.decoder, decoder_path)
             np.save(loss_path, np.array(train_losses))
+            np.save(error_rate_path, np.array(train_error_rates))
 
     def _epoch(self, epoch_size, optimizer=None):
         src_seq_lens = self.data_loader.get_valid_src_seq_lens()
         src_seq_len_probs = src_seq_lens[:,1] / float(np.sum(src_seq_lens[:,1]))
 
         losses = []
+        error_rates = []
         for i in xrange(epoch_size):
             src_seq_len_index = np.argmax(np.random.multinomial(1, .9999 * src_seq_len_probs))
             src_seq_len = src_seq_lens[src_seq_len_index, 0]
@@ -123,6 +131,8 @@ class NeuralMachineTranslation(nn.Module):
             )
             loss = self.loss(logits, batch_y_variables)
             losses.append(loss.cpu().data.numpy())
+            error_rate = self.error_rate(logits, batch_y_variables)
+            error_rates.append(error_rate)
 
             if optimizer is not None:
                 optimizer.zero_grad()
@@ -130,7 +140,8 @@ class NeuralMachineTranslation(nn.Module):
                 optimizer.step()
 
         print('Mean Loss: {}'.format(np.mean(losses)))
-        return losses
+        print('Mean Error Rate: {}'.format(np.mean(error_rates)))
+        return losses, error_rates
 
     def translate(self):
         # todo

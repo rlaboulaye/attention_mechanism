@@ -106,7 +106,7 @@ def split_data(
 
 class SentenceTranslationDataset(Dataset):
     # todo train/test split
-
+    PAD = -1
     # default, english to spanish
     def __init__(
         self,
@@ -186,19 +186,19 @@ class SentenceTranslationDataset(Dataset):
         if self.EOS_TOKEN not in word_2_encoding:
             raise ValueError("EOS token not in vocabulary")
 
-        return vocab, word_2_encoding
+        return np.array(vocab), word_2_encoding
 
     def _get_src_emb_cache_path(self):
         hash_str = str(abs(hash(
             self.src_lang_embedding_path + self.src_lang_vocab_path
         )))
-        return self.cache_dir + "src_emb_"  + str(self.max_vocab_size) + "_" + hash_str + ".p"
+        return self.cache_dir + "emb_"  + str(self.max_vocab_size) + "_" + hash_str + ".p"
 
     def _get_targ_emb_cache_path(self):
         hash_str = str(abs(hash(
             self.targ_lang_embedding_path + self.targ_lang_vocab_path
         )))
-        return self.cache_dir + "targ_emb_"  + str(self.max_vocab_size) + "_" + hash_str + ".p"
+        return self.cache_dir + "emb_"  + str(self.max_vocab_size) + "_" + hash_str + ".p"
 
     def _init_embedding(self):
         cache_src_emb_path = self._get_src_emb_cache_path()
@@ -221,11 +221,12 @@ class SentenceTranslationDataset(Dataset):
         if cache_path is not None and os.path.isfile(cache_path):
             return pickle.load(open(cache_path, "rb"))
 
-        encoding_2_embedding = {}
+        encoding_2_embedding = None
         with open_file(path, "r") as f:
             for i, line in enumerate(f):
                 if i == 0:
-                    embedding_size = int(line.strip().split(" ")[1])
+                    self.embedding_size = int(line.strip().split(" ")[1])
+                    encoding_2_embedding = np.empty((len(vocab), self.embedding_size)) * np.nan
                 elif line != "":
                     word, str_embedding = line.strip().split(" ", 1)
                     word = parse_word(word)
@@ -233,8 +234,6 @@ class SentenceTranslationDataset(Dataset):
                     if encoding is not None:
                         embedding = np.array(str_embedding.split(" "), dtype=float)
                         encoding_2_embedding[encoding] = embedding
-                if len(encoding_2_embedding) >= len(word_2_encoding): # will not get any more words, no matter how much we search
-                    break
 
         self._validate_vocab(path, vocab, word_2_encoding, encoding_2_embedding)
 
@@ -244,10 +243,10 @@ class SentenceTranslationDataset(Dataset):
         return encoding_2_embedding
 
     def _validate_vocab(self, path, vocab, word_2_encoding, encoding_2_embedding):
-        if word_2_encoding[self.EOS_TOKEN] not in encoding_2_embedding:
+        if np.any(np.isnan(encoding_2_embedding[word_2_encoding[self.EOS_TOKEN]])):
             raise ValueError(path + " does not contain an end of sequence embedding")
 
-        for encoding in encoding_2_embedding:
+        for encoding, embedding in enumerate(encoding_2_embedding):
             try:
                 word = vocab[encoding]
                 if word_2_encoding[word] != encoding:
@@ -259,7 +258,7 @@ class SentenceTranslationDataset(Dataset):
         hash_str = str(abs(hash(
             self.src_lang_vocab_path + self.src_lang_embedding_path + self.src_lang_text_path
         )))
-        return "{}src_text_v{}_n{}_l{}_{}.p".format(
+        return "{}text_v{}_n{}_l{}_{}.p".format(
             self.cache_dir,
             self.max_vocab_size,
             self.max_n_sentences,
@@ -271,7 +270,7 @@ class SentenceTranslationDataset(Dataset):
         hash_str = str(abs(hash(
             self.targ_lang_vocab_path + self.targ_lang_embedding_path + self.targ_lang_text_path
         )))
-        return "{}targ_text_v{}_n{}_l{}_{}.p".format(
+        return "{}text_v{}_n{}_l{}_{}.p".format(
             self.cache_dir,
             self.max_vocab_size,
             self.max_n_sentences,
@@ -358,7 +357,7 @@ class SentenceTranslationDataset(Dataset):
             encoding = word_2_encoding.get(word, None)
             if encoding is None:
                 unknown_word_count += 1
-            elif encoding not in encoding_2_embedding:
+            elif np.any(np.isnan(encoding_2_embedding[encoding])):
                 raise ValueError("encoding not in embedding")
             sentence.append(encoding)
         sentence.append(word_2_encoding[self.EOS_TOKEN])
@@ -367,9 +366,20 @@ class SentenceTranslationDataset(Dataset):
 
     def _init_batching(self):
         self.batch_indices_start_indices = [0] * len(self.src_data_by_seq_len_indices)
+        self.valid_src_sequence_lens = np.array([i for i, item in enumerate(self.src_data_by_seq_len_indices) if len(item) > 0])
+        self.src_sequence_len_probs = self.valid_src_sequence_lens / float(self.valid_src_sequence_lens.sum())
+        if self.src_sequence_len_probs.sum() > 1.0:
+            self.src_sequence_len_probs *= .99999
 
     def get_valid_src_seq_lens(self):
-        return np.array([[i, len(item)] for i, item in enumerate(self.src_data_by_seq_len_indices) if len(item) > 0])
+        return self.valid_src_sequence_lens
+
+    def get_src_seq_len_probs(self):
+        return self.src_sequence_len_probs
+
+    def sample_src_seq_len(self):
+        src_seq_len_index = np.argmax(np.random.multinomial(1, self.src_sequence_len_probs))
+        return self.valid_src_sequence_lens[src_seq_len_index]
 
     def _validate_batch_params(self, src_seq_len, batch_size, drop_last):
         if src_seq_len >= len(self.batch_indices_start_indices):
@@ -425,12 +435,12 @@ class SentenceTranslationDataset(Dataset):
         np.random.shuffle(self.src_data_by_seq_len_indices[src_seq_len])
 
     def _src_batch(self, batch_indices):
-        batch_src_data = np.array([self._embed_src_sentence(self.src_data[i]) for i in batch_indices])
+        batch_src_data = np.array([self.src_data[i] for i in batch_indices])
         batch_src_data = np.swapaxes(batch_src_data, 0, 1)
         return batch_src_data
 
-    def _embed_src_sentence(self, sentence):
-        return np.array([self.src_encoding_2_embedding[encoding] for encoding in sentence])
+    def embed_src_batch(self, batch_src_data):
+        return np.array([self.src_encoding_2_embedding[batch_t] for batch_t in batch_src_data])
 
     def _targ_batch(self, batch_indices):
         # get max targ seq len
@@ -445,11 +455,19 @@ class SentenceTranslationDataset(Dataset):
         for targ_data in jagged_batch_targ_data:
             pad_width = (0, batch_max_targ_sentence_len - len(targ_data))
             if pad_width != (0,0):
-                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=-1)
+                targ_data = np.pad(targ_data, pad_width, mode="constant", constant_values=self.PAD)
             batch_targ_data.append(targ_data)
 
         batch_targ_data = np.swapaxes(batch_targ_data, 0, 1)
         return batch_targ_data
+
+    def decode_src_batch(self, batch_src_data):
+        batch_src_data = np.swapaxes(batch_src_data, 0, 1)
+        return [self.src_vocab[sentence] for sentence in batch_src_data]
+
+    def decode_targ_batch(self, batch_targ_data):
+        batch_targ_data = np.swapaxes(batch_targ_data, 0, 1)
+        return np.array([self.targ_vocab[batch_t[batch_t != self.PAD]] for batch_t in batch_targ_data])
 
 
 if __name__ == '__main__':
@@ -467,13 +485,16 @@ if __name__ == '__main__':
         pass
     print len(dataset.src_data), len(dataset.targ_data)
 
-    for seq_len, n_sentences in dataset.get_valid_src_seq_lens():
+    for seq_len in dataset.get_valid_src_seq_lens():
         print seq_len
         for _ in xrange(100):
-            dataset.batch(seq_len, 100, True, True)
+            batch_x, batch_y = dataset.batch(seq_len, 100, True, True)
+        # print dataset.embed_src_batch(batch_x)
+        print dataset.decode_src_batch(batch_x)[0]
+        print dataset.decode_targ_batch(batch_y)[0]
         print "passed drop last"
         for _ in xrange(100):
-            dataset.batch(seq_len, 100, False, True)
+            batch = dataset.batch(seq_len, 100, False, True)
         print "passed include last"
 
     # print dataset.get_valid_src_seq_lens()

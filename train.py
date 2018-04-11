@@ -19,7 +19,7 @@ if __name__ == '__main__':
     new_encoder_weights = 'weights/encoder_weights_{}'.format(identifying_str)
     new_decoder_weights = 'weights/decoder_weights_{}'.format(identifying_str)
 
-    loss_path = 'losses_{}.npy'.format(identifying_str)
+    loss_path = 'losses/losses_{}.npy'.format(identifying_str)
 
     targ_lang_vocab_path="./processed_data/en-es/vocab.{}".format(target_language)
     targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.{}".format(target_language)

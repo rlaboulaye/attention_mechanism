@@ -28,7 +28,7 @@ class AttentionMechanism(nn.Module):
 		alphas = self.probability(torch.squeeze(torch.cat([torch.unsqueeze(alpha, dim=0) for alpha in unnorm_alphas], dim=0), dim=-1))
 		weighted_combination = None
 		for i in range(len(embeddings)):
-			weighted_embedding = alphas[i] * embeddings[i]
+			weighted_embedding = alphas[i].unsqueeze(-1) * embeddings[i]
 			if weighted_combination is None:
 				weighted_combination = weighted_embedding
 			else:

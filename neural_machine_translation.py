@@ -104,7 +104,7 @@ class NeuralMachineTranslation(nn.Module):
 
     def _epoch(self, epoch_size, optimizer=None):
         src_seq_lens = self.data_loader.get_valid_src_seq_lens()
-        src_seq_len_probs = src_seq_lens[:,1] / np.sum(src_seq_lens[:,1])
+        src_seq_len_probs = src_seq_lens[:,1] / float(np.sum(src_seq_lens[:,1]))
 
         losses = []
         for i in xrange(epoch_size):

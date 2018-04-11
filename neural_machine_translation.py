@@ -100,7 +100,7 @@ class NeuralMachineTranslation(nn.Module):
             print('Elapsed Time: {}'.format(time.time() - start_time))
             torch.save(self.encoder, encoder_path)
             torch.save(self.decoder, decoder_path)
-        np.save(loss_path, np.array(train_losses))
+            np.save(loss_path, np.array(train_losses))
 
     def _epoch(self, epoch_size, optimizer=None):
         src_seq_lens = self.data_loader.get_valid_src_seq_lens()
@@ -122,7 +122,7 @@ class NeuralMachineTranslation(nn.Module):
                 targ_seq_len
             )
             loss = self.loss(logits, batch_y_variables)
-            losses.append(loss.data)
+            losses.append(loss.cpu().data.numpy())
 
             if optimizer is not None:
                 optimizer.zero_grad()

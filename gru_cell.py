@@ -20,14 +20,6 @@ class GRUCell(nn.Module):
 		self.W_h = nn.Linear(input_dimension, hidden_dimension, bias=True)
 		self.U_h = nn.Linear(hidden_dimension, hidden_dimension, bias=True)
 		self.initialize_modules()
-		if torch.cuda.is_available():
-			self.W_z = self.W_z.cuda()
-			self.U_z = self.U_z.cuda()
-			self.W_r = self.W_r.cuda()
-			self.U_r = self.U_r.cuda()
-			self.W_h = self.W_h.cuda()
-			self.U_h = self.U_h.cuda()
-
 
 	def initialize_modules(self):
 		for module in self.modules():

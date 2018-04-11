@@ -20,7 +20,7 @@ class NeuralMachineTranslation(nn.Module):
 
     def __init__(
         self,
-        data_loader,
+        train_data_loader,
         vocab_size,
 
         batch_size=16,
@@ -42,7 +42,7 @@ class NeuralMachineTranslation(nn.Module):
         stacked_time_cell=GRUCell
     ):
         super(NeuralMachineTranslation, self).__init__()
-        self.data_loader = data_loader
+        self.train_data_loader = train_data_loader
         if encoder_weights is None:
             self.encoder = Encoder(enc_input_dimension_size, enc_hidden_dimension_size, n_encoder_layers, batch_size)
 
@@ -110,27 +110,22 @@ class NeuralMachineTranslation(nn.Module):
             np.save(error_rate_path, np.array(train_error_rates))
 
     def _epoch(self, epoch_size, optimizer=None):
-        src_seq_lens = self.data_loader.get_valid_src_seq_lens()
-        src_seq_len_probs = src_seq_lens[:,1] / float(np.sum(src_seq_lens[:,1]))
-
         losses = []
         error_rates = []
         for i in xrange(epoch_size):
-            src_seq_len_index = np.argmax(np.random.multinomial(1, .9999 * src_seq_len_probs))
-            src_seq_len = src_seq_lens[src_seq_len_index, 0]
-            batch_x_values, batch_y_values = self.data_loader.batch(src_seq_len, self.batch_size)
-            targ_seq_len = batch_y_values.shape[0]
-            batch_x_variables = [get_variable(torch.FloatTensor(x)) for x in batch_x_values]
-            batch_y_variables = [get_variable(torch.LongTensor(y)) for y in batch_y_values]
-            encoding = self.encoder(batch_x_variables, self.use_attention_mechanism)
-            predictions, logits = self.decoder(
-                encoding,
-                self.data_loader.targ_encoding_2_embedding,
-                self.data_loader.targ_word_2_encoding[self.data_loader.EOS_TOKEN],
-                targ_seq_len
-            )
+            if optimizer is None:
+                batch_x_values, batch_y_values = self._get_test_batch()
+            else:
+                batch_x_values, batch_y_values, batch_x_encodings = self._get_train_batch()
+            targ_seq_len = len(batch_y_values)
+            batch_x_variables = self._batch_x_values_to_variables(batch_x_values)
+            batch_y_variables = self._batch_y_values_to_variables(batch_y_values)
+
+            predictions, logits = self._forward(batch_x_variables, targ_seq_len)
+
             loss = self.loss(logits, batch_y_variables)
             losses.append(loss.cpu().data.numpy())
+
             error_rate = self.error_rate(np.array(predictions), batch_y_values)
             error_rates.append(error_rate)
 
@@ -143,6 +138,47 @@ class NeuralMachineTranslation(nn.Module):
         print('Mean Error Rate: {}'.format(np.mean(error_rates)))
         return losses, error_rates
 
-    def translate(self):
-        # todo
-        pass
+    def _batch_x_values_to_variables(self, batch_x_values):
+        return [get_variable(torch.FloatTensor(x)) for x in batch_x_values]
+
+    def _batch_y_values_to_variables(self, batch_y_values):
+        return [get_variable(torch.LongTensor(y)) for y in batch_y_values]
+
+    def _get_train_batch(self, src_seq_len=None):
+        return self._get_batch(self.train_data_loader, src_seq_len)
+
+    def _get_test_batch(self, src_seq_len=None):
+        return self._get_batch(self.test_data_loader, src_seq_len)
+
+    def _get_batch(self, data_loader, src_seq_len=None):
+        if src_seq_len is None:
+            src_seq_len = data_loader.sample_src_seq_len()
+        batch_x_encodings, batch_y_values = data_loader.batch(src_seq_len, self.batch_size)
+        batch_x_values = data_loader.embed_src_batch(batch_x_encodings)
+        return batch_x_values, batch_y_values, batch_x_encodings
+
+    def _forward(self, batch_x_variables, targ_seq_len=None):
+        encoding = self.encoder(batch_x_variables, self.use_attention_mechanism)
+        predictions, logits = self.decoder(
+            encoding,
+            self.train_data_loader.targ_encoding_2_embedding,
+            self.train_data_loader.targ_word_2_encoding[self.train_data_loader.EOS_TOKEN],
+            targ_seq_len
+        )
+        return predictions, logits
+
+    def sample_train_translation(self):
+        return self._sample_translation(self.train_data_loader)
+
+    def sample_test_translation(self):
+        return self._sample_translation(self.test_data_loader)
+
+    def _sample_translation(self, data_loader):
+        batch_x_values, batch_y_values, batch_x_encodings = self._get_batch(data_loader)
+        batch_x_variables = self._batch_x_values_to_variables(batch_x_values)
+        predictions, logits = self._forward(batch_x_variables)
+
+        batch_x_text = data_loader.decode_src_batch(batch_x_encodings)
+        batch_y_text = data_loader.decode_targ_batch(batch_y_values)
+        predictions_text = data_loader.decode_targ_batch(predictions)
+        return batch_x_text, batch_y_text, predictions_text

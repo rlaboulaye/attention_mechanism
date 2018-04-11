@@ -47,3 +47,7 @@ if __name__ == '__main__':
     print "training {}".format(identifying_str)
 
     nmt.train(num_epochs, epoch_size, learning_rate, new_encoder_weights, new_decoder_weights, loss_path, error_rate_path)
+    sample_src_text, sample_targ_text, sample_pred_text = nmt.sample_train_translation()
+    print sample_src_text[0]
+    print sample_targ_text[0]
+    print sample_pred_text[0]

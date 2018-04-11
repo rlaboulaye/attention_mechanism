@@ -11,8 +11,10 @@ class SequenceLoss(nn.Module):
 	def forward(self, sequence_of_logits, sequence_of_targets):
 		losses = []
 		for logits, targets in zip(sequence_of_logits, sequence_of_targets):
-			mask = targets != -1
+			mask = (targets != -1).float()
+			targets = (mask * targets.float()).long()
 			batch_loss = self.element_loss(logits, targets)
-			masked_batch_loss = mask.float() * batch_loss
-			losses.append(masked_batch_loss.sum() / mask.float().sum())
+			batch_loss *= mask
+			mean_loss = batch_loss.sum() / mask.sum()
+			losses.append(mean_loss)
 		return np.mean(losses)

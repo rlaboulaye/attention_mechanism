@@ -25,6 +25,7 @@ if __name__ == '__main__':
     train_data_loader = SentenceTranslationDataset(
         targ_lang_vocab_path=targ_lang_vocab_path,
         targ_lang_embedding_path=targ_lang_embedding_path,
+        src_lang_text_path="./processed_data/en-es/text.en.train",
         targ_lang_text_path=targ_lang_text_train_path,
         max_vocab_size=vocab_size,
         max_n_sentences=1e6,
@@ -35,6 +36,7 @@ if __name__ == '__main__':
     test_data_loader = SentenceTranslationDataset(
         targ_lang_vocab_path=targ_lang_vocab_path,
         targ_lang_embedding_path=targ_lang_embedding_path,
+        src_lang_text_path="./processed_data/en-es/text.en.test",
         targ_lang_text_path=targ_lang_text_test_path,
         max_vocab_size=vocab_size,
         max_n_sentences=1e6,

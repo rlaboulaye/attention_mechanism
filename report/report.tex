@@ -149,7 +149,7 @@ More specifically, we used the subset of this corpus that had aligned English an
 We knew that our model would have a set output vocabulary size and worried that many of the words
 that appeared in our dataset, things such as diverse world leaders, locations, and organizations,
 would be too uncommon to be included in our output vocabulary.
-Therefore, we used Stanford’s Named Entity Recognition library\textsuperscript{[todo citation]}
+Therefore, we used Stanford’s Named Entity Recognition library \textsuperscript{[4]}
 to tag all people, locations, and organizations and replace them with their class name.
 We further simplified our translation task by pruning our dataset to preserve only sentences of
 length 30 or less composed only of words in the 3000 most common words of the dataset.
@@ -214,6 +214,8 @@ well.
 \item K. Cho, B. van Merrienboer, D. Bahdanau, and Y. Bengio. On the properties of neural machine translation: Encoder-decoder approaches. arXiv preprint arXiv:1409.1259, 2014.
 
 \item Europarl: A Parallel Corpus for Statistical Machine Translation, Philipp Koehn, MT Summit 2005.
+
+\item Jenny Rose Finkel, Trond Grenager, and Christopher Manning. 2005. Incorporating Non-local Information into Information Extraction Systems by Gibbs Sampling. Proceedings of the 43nd Annual Meeting of the Association for Computational Linguistics (ACL 2005), pp. 363-370. http://nlp.stanford.edu/~manning/papers/gibbscrf3.pdf
 \end{enumerate}
 
 \end{multicols}

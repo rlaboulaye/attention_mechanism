@@ -17,7 +17,7 @@
 
 \noindent \textbf{Abstract.}
 We explore the use of a recurrent neural network (RNN) with a gated recurrent unit (GRU) to solve
-the task of neural mchine translation (NMT). Futhermore, we apply an attention mechanism to allow
+the task of neural machine translation (NMT). Furthermore, we apply an attention mechanism to allow
 the RNN to learn which words of the input sentence are important at each step of translation.
 
 \section{Introduction}
@@ -36,27 +36,9 @@ The RNN model is capable of learning patterns in time-series data,
 like sentences, with variable length.
 The GRU is an internal component to the RNN which allows the model to persist a memory state between
 time steps, or words, in the sentence.
-We apply an attention mechanism, proposed by Bahdanau, et. al. \textsuperscript{[1]}, which further
+We apply an attention mechanism, proposed by Bahdanau, et. al.\textsuperscript{[1]}, which further
 enhances the translation process by allowing the RNN to observe data from every time step in the
 sequence, not just the previous.
-
-% Automatic text-to-text translation presents several challenges for any machine learning algorithm.
-% While some machine learning tasks have data with instances of a fized size, sentences come in many
-% different sizes; it can be terse or overly verbose.
-% Additionally, this problem is compounded as the target translation language has the same problem.
-% The algorithm must be able to map from any length of sentence to any length of translated sentence.
-% In one language, there can be many ways to express the same general meaning.
-% With two languages, there is a many-to-many problem where any one form of a sentence could be
-% legitimately translated into any one of the valid target sentence forms.
-% Thirdly, both languages typically have a large vocabulary with hundreds of thousands of words.
-% Each word has to be encoded using some mechanism to allow the computer to analyze it.
-% With a large vocabularly, a high dimensional encoding is necessary to uniquely and unambigously
-% represent all the words in a language.
-% If a language has 100,000 words, a vector of size 100,000 filled with all zeros except a single one,
-% indicating
-% One alternative is a lower, but still high dimensional, learned embedding, like FastText[citation needed]
-% which 
-% encoding/embedding
 
 \section{Background}
 \subsection{RNN Encoder-Decoder}
@@ -77,10 +59,10 @@ signal from early input words might be slowly diluted.
 
 \subsection{GRU}
 
-At each time step of an RNN, there must be some function to combine any state rom the last time
+At each time step of an RNN, there must be some function to combine any state from the last time
 step and the input at the current time step.
 One solution is the gated recurrent unit (GRU)\textsuperscript{[2]}.
-A GRU takes two inputs, the input data at time $t$ and the ouput of the GRU at time $t-1$, outputing
+A GRU takes two inputs, the input data at time $t$ and the output of the GRU at time $t-1$, outputting
 a single vector.
 The output becomes a type of memory, updated with new input of the time series data.
 
@@ -96,7 +78,7 @@ state of the decoder and the output of each and every encoder time step.
 This produces a weight for each output of the encoder, allowing the decoder, as a function of its
 current state, to learn how to use the encoder outputs.
 This sub-architecture is a simple fully-connected feedforward neural network.
-Thus, error signals can be propagated from the decoder back through the attention meachanism and
+Thus, error signals can be propagated from the decoder back through the attention mechanism and
 the encoder.
 Now the decoder, having a full view of the input sequence, can learn which parts of the input
 sequence are relevant in determining the next output in the output sequence.
@@ -143,13 +125,12 @@ the cell looks like a typical GRU.
 \section{Experiment}
 
 We decided to try our attention mechanism model on an English-to-Spanish NMT task.
-We selected a canonical NMT dataset, the European Parliament Proceedings corpus
-\textsuperscript{[3]}.
+We selected a canonical NMT dataset, the European Parliament Proceedings corpus\textsuperscript{[3]}.
 More specifically, we used the subset of this corpus that had aligned English and Spanish sentences.
 We knew that our model would have a set output vocabulary size and worried that many of the words
 that appeared in our dataset, things such as diverse world leaders, locations, and organizations,
 would be too uncommon to be included in our output vocabulary.
-Therefore, we used Stanford’s Named Entity Recognition library \textsuperscript{[4]} (NER)
+Therefore, we used Stanford’s Named Entity Recognition library\textsuperscript{[4]} (NER)
 to tag all people, locations, and organizations and replace them with their class name.
 We further simplified our translation task by pruning our dataset to preserve only sentences of
 length 30 or less composed only of words in the 3000 most common words of the dataset.
@@ -195,7 +176,7 @@ Consider the train and test loss plots, respectively shown below.
 \noindent While all models appear to converge to the same minimum, those which use the attention
 mechanism begin their convergence more quickly.
 The models which use cell type A, plateau sooner, so the model without the attention mechanism
-quickly surposes them.
+quickly surpasses them.
 The models with cell type B have better convergence overall.
 
 We also consider a word error rate.
@@ -221,7 +202,7 @@ We further reduced the vocab to the most common words.
 
 Attempting to improve our results, we focused on variations on our architectures for the best
 architectures, the ones using cell type B.
-Since the loss was platteaued quickly, this seemed a reasonable choice.
+Since the loss plateaued quickly, this seemed a reasonable choice.
 The loss plots are shown below.
 
 \begin{center}
@@ -232,11 +213,11 @@ The loss plots are shown below.
 \includegraphics[scale=.4]{size_comparison_losses_test}
 \end{center}
 
-\noindent However, changing the hyperparamter settings showed no significant improvement.
+\noindent However, changing the hyperparameter settings showed no significant improvement.
 There is slight improvement in the capacity of the model when using more layers, as can be expected.
 
 In future iterations, we would consider a couple more variations to lower the word error rate.
-It is possible that the models could drop out of their local minima given siginificantly longer
+It is possible that the models could drop out of their local minima given significantly longer
 training time.
 Furthermore, a differ loss function could ease the task at hand for the models.
 Currently, the models are only predicting about one word in 20 correctly, or one word per sentence.
@@ -245,7 +226,7 @@ natural language.
 
 \section{Summary}
 Neural machine translation is a difficult task.
-A translation dataset requires siginificant natural language processing techniques.
+A translation dataset requires significant natural language processing techniques.
 Using an attention mechanism on a traditional RNN allowed us to achieve faster convergence given
 the same amount of training data.
 

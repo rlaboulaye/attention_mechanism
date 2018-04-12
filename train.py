@@ -12,7 +12,7 @@ if __name__ == '__main__':
     test_epoch_size = 100
     learning_rate = 1e-5
 
-    identifier = 'es_no_attention'
+    identifier = 'es_attention_b_stacked_large'
 
     # old_encoder_weights = 'weights/encoder_weights'
     # old_decoder_weights = 'weights/decoder_weights'
@@ -43,11 +43,22 @@ if __name__ == '__main__':
     )
     print "data loaded"
 
-    nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size)
+    # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size)
     # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellA)
     # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellA, stacked_time_cell=ContextEnhancedGRUCellA)
     # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB)
     # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB, stacked_time_cell=ContextEnhancedGRUCellB)
+
+    n_encoder_layers=3
+    enc_hidden_dimension_size=512
+    n_decoder_layers=3
+    dec_hidden_dimension_size=1024
+    nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, \
+            n_encoder_layers=n_encoder_layers, enc_hidden_dimension_size=enc_hidden_dimension_size, \
+            n_decoder_layers=n_decoder_layers, dec_hidden_dimension_size=dec_hidden_dimension_size, \
+            use_attention_mechanism=True, \
+            bottom_time_cell=ContextEnhancedGRUCellB, stacked_time_cell=ContextEnhancedGRUCellB)
+
     print "nmt initialized"
 
     print "training {}\n".format(identifier)

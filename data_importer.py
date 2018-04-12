@@ -105,32 +105,16 @@ def split_data(
 
 
 class SentenceTranslationDataset(Dataset):
-    # todo train/test split
+
     PAD = -1
-    # # default, english to spanish
-    # def __init__(
-    #     self,
-    #     src_lang_vocab_path="./processed_data/en-es/vocab.en",
-    #     targ_lang_vocab_path="./processed_data/en-es/vocab.es",
-    #     src_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
-    #     targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.es",
-    #     src_lang_text_path="./data/en-es/train.en",
-    #     targ_lang_text_path="./data/en-es/train.es",
-    #     max_vocab_size=None,
-    #     max_n_sentences=None,
-    #     max_src_sentence_len=None,
-    #     max_targ_sentence_len=None,
-    #     eos_token="</s>"
-    # ):
-    # english to english
     def __init__(
         self,
         src_lang_vocab_path="./processed_data/en-es/vocab.en",
-        targ_lang_vocab_path="./processed_data/en-es/vocab.en",
+        targ_lang_vocab_path="./processed_data/en-es/vocab.es",
         src_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
-        targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
-        src_lang_text_path="./data/en-es/train.en",
-        targ_lang_text_path="./data/en-es/train.en",
+        targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.es",
+        src_lang_text_path="./processed_data/en-es/text.en.train",
+        targ_lang_text_path="./processed_data/en-es/text.es.train",
         max_vocab_size=None,
         max_n_sentences=None,
         max_src_sentence_len=None,

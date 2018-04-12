@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=15:00:00   # walltime - this is one hour
+#SBATCH --time=20:00:00   # walltime - this is one hour
 #SBATCH --ntasks=1   # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --gres=gpu:1

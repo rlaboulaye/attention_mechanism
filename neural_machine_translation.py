@@ -21,6 +21,7 @@ class NeuralMachineTranslation(nn.Module):
     def __init__(
         self,
         train_data_loader,
+        test_data_loader,
         vocab_size,
 
         batch_size=16,
@@ -43,6 +44,7 @@ class NeuralMachineTranslation(nn.Module):
     ):
         super(NeuralMachineTranslation, self).__init__()
         self.train_data_loader = train_data_loader
+        self.test_data_loader = test_data_loader
         if encoder_weights is None:
             self.encoder = Encoder(enc_input_dimension_size, enc_hidden_dimension_size, n_encoder_layers, batch_size)
 
@@ -92,29 +94,43 @@ class NeuralMachineTranslation(nn.Module):
         self.batch_size = batch_size
         self.use_attention_mechanism = use_attention_mechanism
 
-    def train(self, num_epochs=10, epoch_size=10, learning_rate=1e-5, encoder_path='weights/encoder_weights', decoder_path='weights/decoder_weights', loss_path='losses/losses.npy', error_rate_path='losses/error_rates.npy'):
+    def train(self, num_epochs=60, train_epoch_size=1000, test_epoch_size=100, learning_rate=1e-5, identifier='default'):
+        encoder_path='weights/encoder_weights_{}'.format(identifier)
+        decoder_path='weights/decoder_weights_{}'.format(identifier)
+        train_loss_path='losses/losses_train_{}.npy'.format(identifier)
+        test_loss_path='losses/losses_test_{}.npy'.format(identifier)
+        train_error_rate_path='losses/error_rates_train_{}.npy'.format(identifier)
+        test_error_rate_path='losses/error_rates_test_{}.npy'.format(identifier)
         optimizer = torch.optim.Adam(itertools.chain(self.encoder.parameters(), self.decoder.parameters()), lr=learning_rate)
         train_losses = []
+        test_losses = []
         train_error_rates = []
+        test_error_rates = []
         start_time = time.time()
         for e in xrange(num_epochs):
             print('Epoch {}'.format(e))
-            train_loss, train_error_rate = self._epoch(epoch_size, optimizer)
+            print('Train')
+            train_loss, train_error_rate = self._epoch(train_epoch_size, optimizer)
             train_losses += train_loss
             train_error_rates += train_error_rate
-            # test_losses += self._epoch(epoch_size) # todo
-            print('Elapsed Time: {}'.format(time.time() - start_time))
+            print('Test')
+            test_loss, test_error_rate = self._epoch(test_epoch_size, optimizer=None)
+            test_losses += test_loss
+            test_error_rates += test_error_rate
+            print('Elapsed Time: {}\n'.format(time.time() - start_time))
             torch.save(self.encoder, encoder_path)
             torch.save(self.decoder, decoder_path)
-            np.save(loss_path, np.array(train_losses))
-            np.save(error_rate_path, np.array(train_error_rates))
+            np.save(train_loss_path, np.array(train_losses))
+            np.save(test_loss_path, np.array(test_losses))
+            np.save(train_error_rate_path, np.array(train_error_rates))
+            np.save(test_error_rate_path, np.array(test_error_rates))
 
     def _epoch(self, epoch_size, optimizer=None):
         losses = []
         error_rates = []
         for i in xrange(epoch_size):
             if optimizer is None:
-                batch_x_values, batch_y_values = self._get_test_batch()
+                batch_x_values, batch_y_values, batch_x_encodings = self._get_test_batch()
             else:
                 batch_x_values, batch_y_values, batch_x_encodings = self._get_train_batch()
             targ_seq_len = len(batch_y_values)

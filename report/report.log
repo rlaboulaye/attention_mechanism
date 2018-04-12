@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.23)  12 APR 2018 11:52
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.23)  12 APR 2018 12:42
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -8,8 +8,8 @@ LaTeX2e <2016/02/01>
 Babel <3.9q> and hyphenation patterns for 12 language(s) loaded.
 (/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
-(/usr/share/texlive/texmf-dist/tex/latex/base/size11.clo
-File: size11.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 )
 \c@part=\count79
 \c@section=\count80
@@ -169,12 +169,12 @@ LaTeX Font Info:    ... okay on input line 9.
 * \topmargin=-37.0pt
 * \headheight=12.0pt
 * \headsep=25.0pt
-* \topskip=11.0pt
+* \topskip=10.0pt
 * \footskip=30.0pt
-* \marginparwidth=59.0pt
-* \marginparsep=10.0pt
+* \marginparwidth=65.0pt
+* \marginparsep=11.0pt
 * \columnsep=10.0pt
-* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
+* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
 * \hoffset=0.0pt
 * \voffset=0.0pt
 * \mag=1000
@@ -248,28 +248,30 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 14.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <10.95> on input line 39.
+(Font)              <7> on input line 39.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 39.
 
 [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-<attention_mechanism.png, id=14, 235.88126pt x 301.125pt>
+<attention_mechanism.png, id=14, 445.665pt x 545.03625pt>
 File: attention_mechanism.png Graphic file (type png)
 
 <use attention_mechanism.png>
 Package pdftex.def Info: attention_mechanism.png used on input line 106.
-(pdftex.def)             Requested size: 117.94034pt x 150.56212pt.
+(pdftex.def)             Requested size: 133.70053pt x 163.51213pt.
 Missing character: There is no â in font cmr10!
 Missing character: There is no € in font cmr10!
 Missing character: There is no ™ in font cmr10!
 
-<context-gru-a.png, id=16, 854.19125pt x 538.01pt>
+<context-gru-a.png, id=15, 854.19125pt x 538.01pt>
 File: context-gru-a.png Graphic file (type png)
  <use context-gru-a.png>
 Package pdftex.def Info: context-gru-a.png used on input line 125.
 (pdftex.def)             Requested size: 170.83522pt x 107.60008pt.
 
-<context-gru-b.png, id=17, 893.3375pt x 539.01375pt>
+<context-gru-b.png, id=16, 893.3375pt x 539.01375pt>
 File: context-gru-b.png Graphic file (type png)
  <use context-gru-b.png>
 Package pdftex.def Info: context-gru-b.png used on input line 136.
@@ -279,27 +281,82 @@ Missing character: There is no € in font cmr10!
 Missing character: There is no ™ in font cmr10!
 
 [2 <./attention_mechanism.png> <./context-gru-a.png> <./context-gru-b.png>]
-[3] (./report.aux) ) 
+<model_comparison_losses_train.png, id=20, 462.528pt x 346.896pt>
+File: model_comparison_losses_train.png Graphic file (type png)
+
+<use model_comparison_losses_train.png>
+Package pdftex.def Info: model_comparison_losses_train.png used on input line 1
+88.
+(pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
+
+<model_comparison_losses_test.png, id=22, 462.528pt x 346.896pt>
+File: model_comparison_losses_test.png Graphic file (type png)
+
+<use model_comparison_losses_test.png>
+Package pdftex.def Info: model_comparison_losses_test.png used on input line 19
+2.
+(pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
+
+<model_comparison_error_rates_train.png, id=23, 462.528pt x 346.896pt>
+File: model_comparison_error_rates_train.png Graphic file (type png)
+
+<use model_comparison_error_rates_train.png>
+Package pdftex.def Info: model_comparison_error_rates_train.png used on input l
+ine 207.
+(pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
+
+<model_comparison_error_rates_test.png, id=24, 462.528pt x 346.896pt>
+File: model_comparison_error_rates_test.png Graphic file (type png)
+
+<use model_comparison_error_rates_test.png>
+Package pdftex.def Info: model_comparison_error_rates_test.png used on input li
+ne 211.
+(pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
+
+<size_comparison_losses_train.png, id=25, 462.528pt x 346.896pt>
+File: size_comparison_losses_train.png Graphic file (type png)
+
+<use size_comparison_losses_train.png>
+Package pdftex.def Info: size_comparison_losses_train.png used on input line 22
+8.
+(pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
+ [3 <./model_comparison_losses_train.png> <./model_comparison_losses_test.png> 
+<./model_comparison_error_rates_train.png> <./model_comparison_error_rates_test
+.png>]
+<size_comparison_losses_test.png, id=33, 462.528pt x 346.896pt>
+File: size_comparison_losses_test.png Graphic file (type png)
+
+<use size_comparison_losses_test.png>
+Package pdftex.def Info: size_comparison_losses_test.png used on input line 232
+.
+(pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
+
+Underfull \hbox (badness 5119) in paragraph at lines 235--237
+\OT1/cmr/m/n/10 However, chang-ing the hy-per-paramter set-tings
+ []
+
+[4 <./size_comparison_losses_train.png> <./size_comparison_losses_test.png>]
+(./report.aux) ) 
 Here is how much of TeX's memory you used:
- 2104 strings out of 494497
- 30517 string characters out of 6172399
- 111980 words of memory out of 5000000
- 5511 multiletter control sequences out of 15000+600000
- 8811 words of font info for 31 fonts, out of 8000000 for 9000
+ 2132 strings out of 494497
+ 31600 string characters out of 6172399
+ 101959 words of memory out of 5000000
+ 5533 multiletter control sequences out of 15000+600000
+ 7895 words of font info for 28 fonts, out of 8000000 for 9000
  264 hyphenation exceptions out of 8191
- 37i,6n,32p,351b,278s stack positions out of 5000i,500n,10000p,200000b,80000s
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/
-cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmb
-x12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr
-/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/
-texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive
-/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-d
-ist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on report.pdf (3 pages, 221603 bytes).
+ 37i,6n,32p,351b,300s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
+mbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.
+pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></
+usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/sha
+re/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texl
+ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/
+fonts/type1/public/amsfonts/cm/cmsy10.pfb>
+Output written on report.pdf (4 pages, 542790 bytes).
 PDF statistics:
- 51 PDF objects out of 1000 (max. 8388607)
- 33 compressed objects within 1 object stream
+ 65 PDF objects out of 1000 (max. 8388607)
+ 35 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 16 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 46 words of extra memory for PDF output out of 10000 (max. 10000000)
 

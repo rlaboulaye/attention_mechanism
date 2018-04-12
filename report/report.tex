@@ -1,4 +1,4 @@
-\documentclass[letterpaper, 11pt]{article}
+\documentclass[letterpaper, 10pt]{article}
 
 \usepackage[letterpaper, margin=1in]{geometry}
 \usepackage{indentfirst}
@@ -103,7 +103,7 @@ sequence are relevant in determining the next output in the output sequence.
 A diagram of this is shown below.
 
 \begin{center}
-\includegraphics[scale=.5]{attention_mechanism}
+\includegraphics[scale=.3]{attention_mechanism}
 \end{center}
 
 \subsection{GRU Variation}
@@ -149,7 +149,7 @@ More specifically, we used the subset of this corpus that had aligned English an
 We knew that our model would have a set output vocabulary size and worried that many of the words
 that appeared in our dataset, things such as diverse world leaders, locations, and organizations,
 would be too uncommon to be included in our output vocabulary.
-Therefore, we used Stanford’s Named Entity Recognition library \textsuperscript{[4]}
+Therefore, we used Stanford’s Named Entity Recognition library \textsuperscript{[4]} (NER)
 to tag all people, locations, and organizations and replace them with their class name.
 We further simplified our translation task by pruning our dataset to preserve only sentences of
 length 30 or less composed only of words in the 3000 most common words of the dataset.
@@ -181,31 +181,73 @@ well.
 
 \section{Results}
 
-% \begin{center}
-% % \includegraphics[scale=.3]{log_likelihood}
-% \end{center}
+Our models show a clear trend of learning.
+Consider the train and test loss plots, respectively shown below.
 
-% \begin{center}
-% % \includegraphics[scale=.3]{accuracy}
-% \end{center}
+\begin{center}
+\includegraphics[scale=.4]{model_comparison_losses_train}
+\end{center}
 
-% \begin{center}
-% % \includegraphics[scale=.3]{yelp_log_like_short}
-% \end{center}
+\begin{center}
+\includegraphics[scale=.4]{model_comparison_losses_test}
+\end{center}
 
-% \begin{center}
-% % \includegraphics[scale=.3]{yelp_acc_short}
-% \end{center}
+\noindent While all models appear to converge to the same minimum, those which use the attention
+mechanism begin their convergence more quickly.
+The models which use cell type A, plateau sooner, so the model without the attention mechanism
+quickly surposes them.
+The models with cell type B have better convergence overall.
 
-% \begin{center}
-% % \includegraphics[scale=.3]{yelp_log_like_long}
-% \end{center}
+We also consider a word error rate.
+This measurement determines what percentage of the words were incorrectly translated.
+Consider the plots below, containing the word error rates for all the models at both train and test
+time.
 
-% \begin{center}
-% % \includegraphics[scale=.23]{yelp_table}
-% \end{center}
+\begin{center}
+\includegraphics[scale=.4]{model_comparison_error_rates_train}
+\end{center}
 
-\section{Summary/Conclusion}
+\begin{center}
+\includegraphics[scale=.4]{model_comparison_error_rates_test}
+\end{center}
+
+These word error rates correlate highly with the losses, though with more variance between epochs.
+
+While there is a clear indication of learning some mapping between the English and Spanish text,
+word error rates of 96\% are hardly deployable.
+We attempted to simplify the learning process from the beginning.
+We applied NER to remove the occurances of rare names, places and organizations.
+We further reduced the vocab to the most common words.
+
+Attempting to improve our results, we focused on variations on our architectures for the best
+architectures, the ones using cell type B.
+Since the loss was platteaued quickly, this seemed a reasonable choice.
+The loss plots are shown below.
+
+\begin{center}
+\includegraphics[scale=.4]{size_comparison_losses_train}
+\end{center}
+
+\begin{center}
+\includegraphics[scale=.4]{size_comparison_losses_test}
+\end{center}
+
+\noindent However, changing the hyperparamter settings showed no significant improvement.
+There is slight improvement in the capacity of the model when using more layers, as can be expected.
+
+In future iterations, we would consider a couple more variations to lower the word error rate.
+It is possible that the models could drop out of their local minima given siginificantly longer
+training time.
+Furthermore, a differ loss function could ease the task at hand for the models.
+Currently, the models are only predicting about one word in 20 correctly, or one word per sentence.
+Our loss function does not consider slight variations in word order that could be allowed by the
+natural language.
+
+\section{Summary}
+Neural machine translation is a difficult task.
+A translation dataset requires siginificant natural language processing techniques.
+Using an attention mechanism on a traditional RNN allowed us to achieve faster convergence given
+the same amount of training data.
 
 \section{Bibliography}
 \begin{enumerate}

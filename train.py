@@ -7,13 +7,17 @@ if __name__ == '__main__':
 
     vocab_size = 3e3
     source_language = "en"
-    target_language = 'es'
-    num_epochs = 70
+    target_language = 'en'
+    num_epochs = 65
     train_epoch_size = 1000
     test_epoch_size = 100
     learning_rate = 1e-5
 
-    identifier = 'es_attention_b_stacked_large'
+    #identifier = "en_no_attention"
+    #identifier = "en_attention_a_bottom"
+    #identifier = "en_attention_a_stacked"
+    #identifier = "en_attention_a_bottom"
+    identifier = "en_attention_a_stacked"
 
     # old_encoder_weights = 'weights/encoder_weights'
     # old_decoder_weights = 'weights/decoder_weights'
@@ -61,21 +65,18 @@ if __name__ == '__main__':
     )
     print "data loaded"
 
-    # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size)
-    # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellA)
-    # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellA, stacked_time_cell=ContextEnhancedGRUCellA)
-    # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB)
-    # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB, stacked_time_cell=ContextEnhancedGRUCellB)
-
-    n_encoder_layers=3
-    enc_hidden_dimension_size=512
-    n_decoder_layers=3
-    dec_hidden_dimension_size=1024
-    nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, \
-            n_encoder_layers=n_encoder_layers, enc_hidden_dimension_size=enc_hidden_dimension_size, \
-            n_decoder_layers=n_decoder_layers, dec_hidden_dimension_size=dec_hidden_dimension_size, \
-            use_attention_mechanism=True, \
-            bottom_time_cell=ContextEnhancedGRUCellB, stacked_time_cell=ContextEnhancedGRUCellB)
+    if identifier[3:] == "no_attention":
+        nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size)
+    elif identifier[3:] == "attention_a_bottom":
+        nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellA)
+    elif identifier[3:] == "attention_a_stacked":
+        nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellA, stacked_time_cell=ContextEnhancedGRUCellA)
+    elif identifier[3:] == "attention_b_bottom":
+        nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB)
+    elif identifier[3:] == "attention_b_stacked":
+        nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB, stacked_time_cell=ContextEnhancedGRUCellB)
+    else:
+        raise ValueError("invalid identifier")
 
     print "nmt initialized"
 

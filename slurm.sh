@@ -1,11 +1,12 @@
 #!/bin/bash
-#SBATCH --time=20:00:00   # walltime - this is one hour
+#SBATCH --time=20:00:00   # walltime
 #SBATCH --ntasks=1   # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --gres=gpu:1
 #SBATCH --mem-per-cpu=32G   # memory per CPU core
 
 # LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE
+module purge
 module load defaultenv
 module add cuda/8.0
 module add cudnn/6.0_cuda-8.0

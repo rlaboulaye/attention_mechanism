@@ -194,8 +194,22 @@ time.
 
 These word error rates correlate highly with the losses, though with more variance between epochs.
 
+As indicated by our error rate graph, we only achieved a 95\% error rate.
+Our 5\% accuracy can likely be explained by our mean sentence length being 20 and the final token
+always being the end of sentence token.
+This can be seen in the sample translation below:
+
+\bigskip
+\noindent \textbf{Source}\\
+i have already mentioned the eastern partnership . EOS\\
+\textbf{Target}\\
+ya he mencionado la organización organización . EOS\\
+\textbf{Predicted}\\
+el puede podría la ha de dar EOS
+\bigskip
+
 While there is a clear indication of learning some mapping between the English and Spanish text,
-word error rates of 96\% are hardly deployable.
+our word error rates are hardly deployable.
 We attempted to simplify the learning process from the beginning.
 We applied NER to remove the occurances of rare names, places and organizations.
 We further reduced the vocab to the most common words.

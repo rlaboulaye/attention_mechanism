@@ -7,9 +7,9 @@ if __name__ == '__main__':
 
     vocab_size = 3e3
     target_language = 'es'
-    num_epochs = 2
-    train_epoch_size = 2
-    test_epoch_size = 2
+    num_epochs = 70
+    train_epoch_size = 1000
+    test_epoch_size = 100
     learning_rate = 1e-5
 
     identifier = 'es_no_attention'
@@ -50,10 +50,10 @@ if __name__ == '__main__':
     # nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size, use_attention_mechanism=True, bottom_time_cell=ContextEnhancedGRUCellB, stacked_time_cell=ContextEnhancedGRUCellB)
     print "nmt initialized"
 
-    print "training {}".format(identifier)
+    print "training {}\n".format(identifier)
 
     nmt.train(num_epochs, train_epoch_size, test_epoch_size, learning_rate, identifier)
-    sample_src_text, sample_targ_text, sample_pred_text = nmt.sample_train_translation()
-    print sample_src_text[0]
-    print sample_targ_text[0]
-    print sample_pred_text[0]
+    # sample_src_text, sample_targ_text, sample_pred_text = nmt.sample_train_translation()
+    # print sample_src_text[0]
+    # print sample_targ_text[0]
+    # print sample_pred_text[0]

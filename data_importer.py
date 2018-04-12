@@ -107,36 +107,36 @@ def split_data(
 class SentenceTranslationDataset(Dataset):
     # todo train/test split
     PAD = -1
-    # default, english to spanish
-    def __init__(
-        self,
-        src_lang_vocab_path="./processed_data/en-es/vocab.en",
-        targ_lang_vocab_path="./processed_data/en-es/vocab.es",
-        src_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
-        targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.es",
-        src_lang_text_path="./data/en-es/train.en",
-        targ_lang_text_path="./data/en-es/train.es",
-        max_vocab_size=None,
-        max_n_sentences=None,
-        max_src_sentence_len=None,
-        max_targ_sentence_len=None,
-        eos_token="</s>"
-    ):
-    # # english to english
+    # # default, english to spanish
     # def __init__(
     #     self,
     #     src_lang_vocab_path="./processed_data/en-es/vocab.en",
-    #     targ_lang_vocab_path="./processed_data/en-es/vocab.en",
+    #     targ_lang_vocab_path="./processed_data/en-es/vocab.es",
     #     src_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
-    #     targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
+    #     targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.es",
     #     src_lang_text_path="./data/en-es/train.en",
-    #     targ_lang_text_path="./data/en-es/train.en",
+    #     targ_lang_text_path="./data/en-es/train.es",
     #     max_vocab_size=None,
     #     max_n_sentences=None,
     #     max_src_sentence_len=None,
     #     max_targ_sentence_len=None,
     #     eos_token="</s>"
     # ):
+    # english to english
+    def __init__(
+        self,
+        src_lang_vocab_path="./processed_data/en-es/vocab.en",
+        targ_lang_vocab_path="./processed_data/en-es/vocab.en",
+        src_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
+        targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.en",
+        src_lang_text_path="./data/en-es/train.en",
+        targ_lang_text_path="./data/en-es/train.en",
+        max_vocab_size=None,
+        max_n_sentences=None,
+        max_src_sentence_len=None,
+        max_targ_sentence_len=None,
+        eos_token="</s>"
+    ):
         if max_vocab_size is not None:
             max_vocab_size = int(max_vocab_size)
         if max_n_sentences is not None:
@@ -169,7 +169,10 @@ class SentenceTranslationDataset(Dataset):
 
     def _init_vocab(self):
         self.src_vocab, self.src_word_2_encoding = self._read_vocab(self.src_lang_vocab_path)
-        self.targ_vocab, self.targ_word_2_encoding = self._read_vocab(self.targ_lang_vocab_path)
+        if self.src_lang_vocab_path == self.targ_lang_vocab_path:
+            self.targ_vocab, self.targ_word_2_encoding = self.src_vocab, self.src_word_2_encoding
+        else:
+            self.targ_vocab, self.targ_word_2_encoding = self._read_vocab(self.targ_lang_vocab_path)
 
     def _read_vocab(self, path):
         vocab = []
@@ -209,13 +212,18 @@ class SentenceTranslationDataset(Dataset):
             cache_src_emb_path
         )
 
-        cache_targ_emb_path = self._get_targ_emb_cache_path()
-        self.targ_encoding_2_embedding = self._read_embedding(
-            self.targ_lang_embedding_path,
-            self.targ_vocab,
-            self.targ_word_2_encoding,
-            cache_targ_emb_path
-        )
+        if self.src_lang_vocab_path == self.targ_lang_vocab_path and\
+            self.src_lang_embedding_path == self.targ_lang_embedding_path\
+        :
+            self.targ_encoding_2_embedding = self.src_encoding_2_embedding
+        else:
+            cache_targ_emb_path = self._get_targ_emb_cache_path()
+            self.targ_encoding_2_embedding = self._read_embedding(
+                self.targ_lang_embedding_path,
+                self.targ_vocab,
+                self.targ_word_2_encoding,
+                cache_targ_emb_path
+            )
 
     def _read_embedding(self, path, vocab, word_2_encoding, cache_path=None):
         if cache_path is not None and os.path.isfile(cache_path):
@@ -303,7 +311,10 @@ class SentenceTranslationDataset(Dataset):
 
         if os.path.isfile(src_text_cache_path) and os.path.isfile(targ_text_cache_path) and os.path.isfile(text_index_cache_path):
             self.src_data = pickle.load(open(src_text_cache_path, "rb"))
-            self.targ_data = pickle.load(open(targ_text_cache_path, "rb"))
+            if src_text_cache_path == targ_text_cache_path:
+                self.targ_data = self.src_data
+            else:
+                self.targ_data = pickle.load(open(targ_text_cache_path, "rb"))
             self.src_data_by_seq_len_indices = pickle.load(open(text_index_cache_path, "rb"))
         else:
             self.src_data = []
@@ -319,11 +330,14 @@ class SentenceTranslationDataset(Dataset):
                     self.known_src_word_count += len(src_sentence) - unknown_src_word_count
                     self.unknown_src_word_count += unknown_src_word_count
 
-                    targ_sentence, unknown_targ_word_count = self._parse_text_line(
-                        targ_line,
-                        self.targ_word_2_encoding,
-                        self.targ_encoding_2_embedding
-                    )
+                    if src_text_cache_path == targ_text_cache_path:
+                        targ_sentence, unknown_targ_word_count = src_sentence, unknown_src_word_count
+                    else:
+                        targ_sentence, unknown_targ_word_count = self._parse_text_line(
+                            targ_line,
+                            self.targ_word_2_encoding,
+                            self.targ_encoding_2_embedding
+                        )
                     self.known_targ_word_count += len(targ_sentence) - unknown_targ_word_count
                     self.unknown_targ_word_count += unknown_targ_word_count
 
@@ -346,7 +360,8 @@ class SentenceTranslationDataset(Dataset):
                         break
 
             pickle.dump(self.src_data, open(src_text_cache_path, "wb"))
-            pickle.dump(self.targ_data, open(targ_text_cache_path, "wb"))
+            if src_text_cache_path != targ_text_cache_path:
+                pickle.dump(self.targ_data, open(targ_text_cache_path, "wb"))
             pickle.dump(self.src_data_by_seq_len_indices, open(text_index_cache_path, "wb"))
 
     def _parse_text_line(self, line, word_2_encoding, encoding_2_embedding):

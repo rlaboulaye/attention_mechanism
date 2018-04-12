@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.23)  12 APR 2018 13:04
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2017.10.23)  12 APR 2018 13:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -248,9 +248,9 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 14.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 39.
+(Font)              <7> on input line 40.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 39.
+(Font)              <5> on input line 40.
 
 [1
 
@@ -259,7 +259,7 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 File: attention_mechanism.png Graphic file (type png)
 
 <use attention_mechanism.png>
-Package pdftex.def Info: attention_mechanism.png used on input line 88.
+Package pdftex.def Info: attention_mechanism.png used on input line 89.
 (pdftex.def)             Requested size: 133.70053pt x 163.51213pt.
 Missing character: There is no â in font cmr10!
 Missing character: There is no € in font cmr10!
@@ -268,13 +268,13 @@ Missing character: There is no ™ in font cmr10!
 <context-gru-a.png, id=15, 854.19125pt x 538.01pt>
 File: context-gru-a.png Graphic file (type png)
  <use context-gru-a.png>
-Package pdftex.def Info: context-gru-a.png used on input line 107.
+Package pdftex.def Info: context-gru-a.png used on input line 108.
 (pdftex.def)             Requested size: 170.83522pt x 107.60008pt.
 
 <context-gru-b.png, id=16, 893.3375pt x 539.01375pt>
 File: context-gru-b.png Graphic file (type png)
  <use context-gru-b.png>
-Package pdftex.def Info: context-gru-b.png used on input line 118.
+Package pdftex.def Info: context-gru-b.png used on input line 119.
 (pdftex.def)             Requested size: 178.66432pt x 107.80083pt.
 Missing character: There is no â in font cmr10!
 Missing character: There is no € in font cmr10!
@@ -286,7 +286,7 @@ File: model_comparison_losses_train.png Graphic file (type png)
 
 <use model_comparison_losses_train.png>
 Package pdftex.def Info: model_comparison_losses_train.png used on input line 1
-69.
+70.
 (pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
 
 <model_comparison_losses_test.png, id=22, 462.528pt x 346.896pt>
@@ -294,7 +294,7 @@ File: model_comparison_losses_test.png Graphic file (type png)
 
 <use model_comparison_losses_test.png>
 Package pdftex.def Info: model_comparison_losses_test.png used on input line 17
-3.
+4.
 (pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
 
 <model_comparison_error_rates_train.png, id=23, 462.528pt x 346.896pt>
@@ -302,7 +302,7 @@ File: model_comparison_error_rates_train.png Graphic file (type png)
 
 <use model_comparison_error_rates_train.png>
 Package pdftex.def Info: model_comparison_error_rates_train.png used on input l
-ine 188.
+ine 189.
 (pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
 
 <model_comparison_error_rates_test.png, id=24, 462.528pt x 346.896pt>
@@ -310,7 +310,7 @@ File: model_comparison_error_rates_test.png Graphic file (type png)
 
 <use model_comparison_error_rates_test.png>
 Package pdftex.def Info: model_comparison_error_rates_test.png used on input li
-ne 192.
+ne 193.
 (pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
 Missing character: There is no Ã in font cmr10!
 Missing character: There is no ³ in font cmr10!
@@ -326,14 +326,14 @@ File: size_comparison_losses_train.png Graphic file (type png)
 
 <use size_comparison_losses_train.png>
 Package pdftex.def Info: size_comparison_losses_train.png used on input line 22
-3.
+4.
 (pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
 
 <size_comparison_losses_test.png, id=33, 462.528pt x 346.896pt>
 File: size_comparison_losses_test.png Graphic file (type png)
 
 <use size_comparison_losses_test.png>
-Package pdftex.def Info: size_comparison_losses_test.png used on input line 227
+Package pdftex.def Info: size_comparison_losses_test.png used on input line 228
 .
 (pdftex.def)             Requested size: 185.0079pt x 138.75594pt.
  [4 <./size_comparison_losses_train.png> <./size_comparison_losses_test.png>] (
@@ -341,7 +341,7 @@ Package pdftex.def Info: size_comparison_losses_test.png used on input line 227
 Here is how much of TeX's memory you used:
  2132 strings out of 494497
  31600 string characters out of 6172399
- 104959 words of memory out of 5000000
+ 110959 words of memory out of 5000000
  5533 multiletter control sequences out of 15000+600000
  7895 words of font info for 28 fonts, out of 8000000 for 9000
  264 hyphenation exceptions out of 8191
@@ -354,7 +354,7 @@ e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texli
 ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texm
 f-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/f
 onts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on report.pdf (4 pages, 544849 bytes).
+Output written on report.pdf (4 pages, 545150 bytes).
 PDF statistics:
  65 PDF objects out of 1000 (max. 8388607)
  35 compressed objects within 1 object stream

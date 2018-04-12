@@ -16,14 +16,15 @@
 \begin{multicols}{2}
 
 \noindent \textbf{Abstract.}
-We explore the use of a recurrent neural network (RNN) with a gated recurrent unit (GRU) to solve
-the task of neural machine translation (NMT). Furthermore, we apply an attention mechanism to allow
-the RNN to learn which words of the input sentence are important at each step of translation.
+We explore the use of an attention mechanism to enhance the standard neural machine translation (NMT)
+task which uses a recurrent neural network (RNN) with a gated recurrent unit (GRU)
+The attention mechanism allows the RNN to learn which words of the input sentence are important at
+each step of translation.
 
 \section{Introduction}
 Given a corpus of written sentences in one language with corresponding sentence translations in
 another language, we would like to train a deep neural network to learn a model which maps from the
-original language to the translated, which having generalizing capabilities to translate novel
+original language to the translated language and has generalizing capabilities to translate novel
 sentences.
 Translation is difficult for humans, even after years of study and practice, and is often best
 performed by those who have studied and used the two languages in question from their nativity.
@@ -49,7 +50,7 @@ sequence.
 At each time step in the sequence, the hidden state is a function of the input token and the hidden
 state of the previous input token.
 Then the decoder, another RNN, uses the state vector from the encoder as its initial state to
-generate new words, updating the its state with each new word generation.
+generate new words, updating its state with each new word generation.
 One chief weakness of this approach is that the way that the hidden states from the original
 encoding are compressed might not be optimal for each distinct step of the decoding process.
 In fact, in many implementations, only the final hidden state of the encoder is preserved as the
@@ -64,7 +65,7 @@ step and the input at the current time step.
 One solution is the gated recurrent unit (GRU)\textsuperscript{[2]}.
 A GRU takes two inputs, the input data at time $t$ and the output of the GRU at time $t-1$, outputting
 a single vector.
-The output becomes a type of memory, updated with new input of the time series data.
+The output becomes a type of memory, updated with the new input of the time series data.
 
 \section{Model Architecture}
 
@@ -75,8 +76,8 @@ Instead of using the resultant state vector from the encoder, the decoder is all
 from each time step of the encoder, using an attention mechanism.
 The attention mechanism is a sub-architecture of the network and a function of the current hidden
 state of the decoder and the output of each and every encoder time step.
-This produces a weight for each output of the encoder, allowing the decoder, as a function of its
-current state, to learn how to use the encoder outputs.
+This mechanism produces a weight for each output of the encoder, allowing the decoder, as a function
+of its current state, to learn how to use the encoder outputs.
 This sub-architecture is a simple fully-connected feedforward neural network.
 Thus, error signals can be propagated from the decoder back through the attention mechanism and
 the encoder.
@@ -90,7 +91,7 @@ A diagram of this is shown below.
 
 \subsection{GRU Variation}
 While Bahdanau, et. al.\textsuperscript{[1]} presented the implementation details for the attention
-mechanism model, it left open to interpretation a way to apply the model.
+mechanism model, they left open to interpretation a way to apply the model.
 In most encoder-decoder architectures, the time cells in the decoder are only built to handle an
 input and a previous state, which is often initialized with the encoder’s output.
 When we introduced the output of the attention mechanism, which we will refer to as the context,
@@ -214,9 +215,9 @@ We attempted to simplify the learning process from the beginning.
 We applied NER to remove the occurances of rare names, places and organizations.
 We further reduced the vocab to the most common words.
 
-Attempting to improve our results, we focused on variations on our architectures for the best
-architectures, the ones using cell type B.
+Attempting to improve our results, we tried altering the model architecture for our two cell type B models.
 Since the loss plateaued quickly, this seemed a reasonable choice.
+We doubled our hidden state size and added a layer to increase the model's learning capacity.
 The loss plots are shown below.
 
 \begin{center}
@@ -227,22 +228,23 @@ The loss plots are shown below.
 \includegraphics[scale=.4]{size_comparison_losses_test}
 \end{center}
 
-\noindent However, changing the hyperparameter settings showed no significant improvement.
+\noindent However, changing the hyperparameter settings showed little improvement.
 There is slight improvement in the capacity of the model when using more layers, as can be expected.
 
 In future iterations, we would consider a couple more variations to lower the word error rate.
 It is possible that the models could drop out of their local minima given significantly longer
 training time.
-Furthermore, a differ loss function could ease the task at hand for the models.
+Furthermore, a different loss function could ease the task at hand for the models.
 Currently, the models are only predicting about one word in 20 correctly, or one word per sentence.
 Our loss function does not consider slight variations in word order that could be allowed by the
 natural language.
+We might also reduce our sentence length to simplify the task.
 
 \section{Summary}
 Neural machine translation is a difficult task.
 A translation dataset requires significant natural language processing techniques.
 Using an attention mechanism on a traditional RNN allowed us to achieve faster convergence given
-the same amount of training data.
+the same amount of training data, however we underestimated the importance of the loss function.
 
 \section{Bibliography}
 \begin{enumerate}

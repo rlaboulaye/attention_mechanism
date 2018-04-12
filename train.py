@@ -6,6 +6,7 @@ from context_enhanced_gru_cell_b import ContextEnhancedGRUCellB
 if __name__ == '__main__':
 
     vocab_size = 3e3
+    source_language = "en"
     target_language = 'es'
     num_epochs = 70
     train_epoch_size = 1000
@@ -17,15 +18,25 @@ if __name__ == '__main__':
     # old_encoder_weights = 'weights/encoder_weights'
     # old_decoder_weights = 'weights/decoder_weights'
 
+    src_lang_vocab_path="./processed_data/en-es/vocab.{}".format(source_language)
+    src_lang_embedding_path="./processed_data/en-es/embedding.vocab.{}".format(source_language)
+    src_lang_text_train_path="./processed_data/en-es/text.{}.train".format(source_language)
+    src_lang_text_test_path="./processed_data/en-es/text.{}.test".format(source_language)
+
     targ_lang_vocab_path="./processed_data/en-es/vocab.{}".format(target_language)
     targ_lang_embedding_path="./processed_data/en-es/embedding.vocab.{}".format(target_language)
     targ_lang_text_train_path="./processed_data/en-es/text.{}.train".format(target_language)
     targ_lang_text_test_path="./processed_data/en-es/text.{}.test".format(target_language)
-    
+
     train_data_loader = SentenceTranslationDataset(
+        src_lang_vocab_path=src_lang_vocab_path,
+        src_lang_embedding_path=src_lang_embedding_path,
+        src_lang_text_path=src_lang_text_train_path,
+
         targ_lang_vocab_path=targ_lang_vocab_path,
         targ_lang_embedding_path=targ_lang_embedding_path,
         targ_lang_text_path=targ_lang_text_train_path,
+
         max_vocab_size=vocab_size,
         max_n_sentences=1e6,
         max_src_sentence_len=30,
@@ -33,9 +44,14 @@ if __name__ == '__main__':
     )
 
     test_data_loader = SentenceTranslationDataset(
+        src_lang_vocab_path=src_lang_vocab_path,
+        src_lang_embedding_path=src_lang_embedding_path,
+        src_lang_text_path=src_lang_text_test_path,
+
         targ_lang_vocab_path=targ_lang_vocab_path,
         targ_lang_embedding_path=targ_lang_embedding_path,
         targ_lang_text_path=targ_lang_text_test_path,
+
         max_vocab_size=vocab_size,
         max_n_sentences=1e6,
         max_src_sentence_len=30,

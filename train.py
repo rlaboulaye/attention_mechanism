@@ -8,7 +8,7 @@ if __name__ == '__main__':
     vocab_size = 3e3
     source_language = "en"
     target_language = 'en'
-    num_epochs = 65
+    num_epochs = 40
     train_epoch_size = 1000
     test_epoch_size = 100
     learning_rate = 1e-5
@@ -16,8 +16,8 @@ if __name__ == '__main__':
     #identifier = "en_no_attention"
     #identifier = "en_attention_a_bottom"
     #identifier = "en_attention_a_stacked"
-    #identifier = "en_attention_a_bottom"
-    identifier = "en_attention_a_stacked"
+    #identifier = "en_attention_b_bottom"
+    #identifier = "en_attention_b_stacked"
 
     # old_encoder_weights = 'weights/encoder_weights'
     # old_decoder_weights = 'weights/decoder_weights'
@@ -39,7 +39,6 @@ if __name__ == '__main__':
 
         targ_lang_vocab_path=targ_lang_vocab_path,
         targ_lang_embedding_path=targ_lang_embedding_path,
-        src_lang_text_path="./processed_data/en-es/text.en.train",
         targ_lang_text_path=targ_lang_text_train_path,
 
         max_vocab_size=vocab_size,
@@ -55,7 +54,6 @@ if __name__ == '__main__':
 
         targ_lang_vocab_path=targ_lang_vocab_path,
         targ_lang_embedding_path=targ_lang_embedding_path,
-        src_lang_text_path="./processed_data/en-es/text.en.test",
         targ_lang_text_path=targ_lang_text_test_path,
 
         max_vocab_size=vocab_size,
@@ -63,7 +61,7 @@ if __name__ == '__main__':
         max_src_sentence_len=30,
         max_targ_sentence_len=30
     )
-    print "data loaded"
+    print("data loaded")
 
     if identifier[3:] == "no_attention":
         nmt = NeuralMachineTranslation(train_data_loader, test_data_loader, vocab_size)
@@ -78,9 +76,9 @@ if __name__ == '__main__':
     else:
         raise ValueError("invalid identifier")
 
-    print "nmt initialized"
+    print("nmt initialized")
 
-    print "training {}\n".format(identifier)
+    print("training {}\n".format(identifier))
 
     nmt.train(num_epochs, train_epoch_size, test_epoch_size, learning_rate, identifier)
     # sample_src_text, sample_targ_text, sample_pred_text = nmt.sample_train_translation()

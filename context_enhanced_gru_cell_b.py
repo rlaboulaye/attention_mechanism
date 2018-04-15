@@ -12,9 +12,11 @@ class ContextEnhancedGRUCellB(GRUCell):
 		super(ContextEnhancedGRUCellB, self).__init__(input_dimension + context_dimension, hidden_dimension, output_activation, gating_activation)
 		self.W_c = nn.Linear(context_dimension, context_dimension, bias=True)
 		self.U_c = nn.Linear(hidden_dimension, context_dimension, bias=True)
+		self.initialize_modules()
 
 	def forward(self, x_t, h_tm1, c_t):
-		c_t = self.gating_activation(self.W_c(c_t) + self.U_c(h_tm1))
+		g_t = self.gating_activation(self.W_c(c_t) + self.U_c(h_tm1))
+		c_t = g_t * c_t
 		x_t = torch.cat((x_t, c_t), dim=-1)
 		z_t = self.gating_activation(self.W_z(x_t) + self.U_z(h_tm1))
 		r_t = self.gating_activation(self.W_r(x_t) + self.U_r(h_tm1))

@@ -27,7 +27,7 @@ class Encoder(nn.Module):
 			forward_input_embedding = input_sequence[i]
 			backward_input_embedding = input_sequence[sequence_length - i - 1]
 			forward_h_tm1 = self.forward_rnn(forward_input_embedding, forward_h_tm1)
-			backward_h_tm1 = self.forward_rnn(backward_input_embedding, backward_h_tm1)
+			backward_h_tm1 = self.backward_rnn(backward_input_embedding, backward_h_tm1)
 			embeddings[i][0] = forward_h_tm1[-1]
 			embeddings[sequence_length - i - 1][1] = backward_h_tm1[-1]
 		if retain_sequence:
